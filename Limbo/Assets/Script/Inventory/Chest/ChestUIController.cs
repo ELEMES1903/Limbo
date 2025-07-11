@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class ChestUIController : MonoBehaviour, IPointerDownHandler, IDragHandler
 {
+    //this script is attached to chest window prefabs
+
     [Header("UI Components")]
     public Button closeButton;
     public Button toggleChildButton;
@@ -13,7 +15,7 @@ public class ChestUIController : MonoBehaviour, IPointerDownHandler, IDragHandle
     [Header("Linked Chest")]
     public Chest linkedChest;
 
-    private RectTransform rectTransform;
+    public RectTransform rectTransform;
     private Canvas canvas;
     private Vector2 offset;
 
@@ -65,7 +67,7 @@ public class ChestUIController : MonoBehaviour, IPointerDownHandler, IDragHandle
         }
     }
 
-    private void ToggleChild()
+    public void ToggleChild()
     {
         if (toggleTargetChild != null)
         {

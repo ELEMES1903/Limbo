@@ -3,6 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(SphereCollider))]
 public class Chest : MonoBehaviour, IInteractable
 {
+
     [Header("UI and Prefab")]
     public GameObject chestGridPrefab;
     private GameObject chestGridInstance;
@@ -14,8 +15,11 @@ public class Chest : MonoBehaviour, IInteractable
 
     [Header("Detection Settings")]
     public float detectionRadius = 2.5f;
-
     private SphereCollider detectionCollider;
+
+    [Header("Window Positioning")]
+    public RectTransform windowOriginPoint;
+
 
     void Start()
     {
@@ -44,6 +48,9 @@ public class Chest : MonoBehaviour, IInteractable
         detectionCollider = GetComponent<SphereCollider>();
         detectionCollider.isTrigger = true;
         detectionCollider.radius = detectionRadius;
+
+        //set window position
+        uiController.rectTransform.position = windowOriginPoint.position;
     }
 
     public void Interact()
@@ -51,6 +58,14 @@ public class Chest : MonoBehaviour, IInteractable
         if (chestGridInstance != null)
         {
             chestGridInstance.SetActive(!chestGridInstance.activeSelf);
+
+            //reset pos of window
+            uiController.rectTransform.position = windowOriginPoint.position;
+
+            if (!uiController.toggleTargetChild.activeSelf)
+            {
+                uiController.ToggleChild();
+            }
         } 
     }
 
@@ -59,6 +74,7 @@ public class Chest : MonoBehaviour, IInteractable
         if (other.CompareTag("Player") && chestGridInstance.activeSelf)
         {
             Interact();
+            
         }
     }
 
