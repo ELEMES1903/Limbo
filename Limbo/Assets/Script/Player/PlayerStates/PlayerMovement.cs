@@ -16,6 +16,7 @@ public class PlayerStateManager : MonoBehaviour
     public float gravity = -9.81f;
     public float jumpHeight = 2.5f;
     [HideInInspector] public float verticalVelocity = 0f;
+    [HideInInspector] public Vector3 currentVelocity;
 
     [Header("Debug")]
     public string currentStateName;
@@ -24,14 +25,15 @@ public class PlayerStateManager : MonoBehaviour
     private bool wallDetectedLastFrame = false;
     private bool ledgeDetectedLastFrame = false;
     public float ledgeCheckHeight = 1.5f;
-    public float ledgeRayDistance = 1f;
+    public float ledgeRayDistance = 2f;
     public LayerMask wallLayer;
+    public Transform ledgeRaycastOrigin;
 
     [HideInInspector] public Vector3 inputDirection = Vector3.zero;
     [HideInInspector] public CharacterController controller;
     public GameObject debugSpherePrefab;
 
-    private float pitch = 0f;
+    public float pitch = 0f;
     private PlayerStateBase currentState;
     
     void Start()
@@ -61,13 +63,14 @@ public class PlayerStateManager : MonoBehaviour
     }
 
     void HandleTransitions()
-    {
-        if (CheckLedgeDetection(out Vector3 ledgePoint))
+    {   
+        if (!(currentState is LedgeHangState) && CheckLedgeDetection(out Vector3 ledgePoint))
         {
             SwitchState(new LedgeHangState(this, ledgePoint));
+            Debug.Log("ledgeRayDistance = " + ledgeRayDistance);
             return;
         }
-
+        
         if (!controller.isGrounded)
             return;
 
