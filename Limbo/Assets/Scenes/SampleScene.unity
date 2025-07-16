@@ -2262,13 +2262,13 @@ MonoBehaviour:
   jumpHeight: 1
   verticalVelocity: 0
   currentStateName: 
-  inputDirection: {x: 0, y: 0, z: 0}
-  controller: {fileID: 0}
   ledgeCheckHeight: 1.5
   ledgeRayDistance: 1
   wallLayer:
     serializedVersion: 2
     m_Bits: 64
+  inputDirection: {x: 0, y: 0, z: 0}
+  controller: {fileID: 0}
   debugSpherePrefab: {fileID: 2040767784694879412, guid: 02a1d3d6d7d11a64ba57519a4744aca5, type: 3}
 --- !u!143 &883624255
 CharacterController:

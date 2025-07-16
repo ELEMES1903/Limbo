@@ -20,8 +20,16 @@ public class PlayerStateManager : MonoBehaviour
     [Header("Debug")]
     public string currentStateName;
 
+    [Header("Ledge Detection")]
+    private bool wallDetectedLastFrame = false;
+    private bool ledgeDetectedLastFrame = false;
+    public float ledgeCheckHeight = 1.5f;
+    public float ledgeRayDistance = 1f;
+    public LayerMask wallLayer;
+
     [HideInInspector] public Vector3 inputDirection = Vector3.zero;
     [HideInInspector] public CharacterController controller;
+    public GameObject debugSpherePrefab;
 
     private float pitch = 0f;
     private PlayerStateBase currentState;
@@ -42,7 +50,7 @@ public class PlayerStateManager : MonoBehaviour
 
     void LateUpdate()
     {
-        CheckLedgeDetection();
+    
     }
 
     public void SwitchState(PlayerStateBase newState)
@@ -54,6 +62,12 @@ public class PlayerStateManager : MonoBehaviour
 
     void HandleTransitions()
     {
+        if (CheckLedgeDetection(out Vector3 ledgePoint))
+        {
+            SwitchState(new LedgeHangState(this, ledgePoint));
+            return;
+        }
+
         if (!controller.isGrounded)
             return;
 
@@ -120,26 +134,23 @@ public class PlayerStateManager : MonoBehaviour
     }
     
 
-    private bool wallDetectedLastFrame = false;
-    private bool ledgeDetectedLastFrame = false;
-    public float ledgeCheckHeight = 1.5f;
-    public float ledgeRayDistance = 1f;
-    public LayerMask wallLayer;
-    public void CheckLedgeDetection()
+
+    public bool CheckLedgeDetection(out Vector3 ledgePoint)
     {
         Vector3 origin = cameraHolder.position;
         Vector3 direction = cameraHolder.forward;
+        ledgePoint = Vector3.zero;
 
         // Forward ray to detect wall
         if (Physics.Raycast(origin, direction, out RaycastHit wallHit, ledgeRayDistance, wallLayer))
         {
-            //checks if hit normal if vertical(wall), regardless of Y rotation
+            // Check if wall is vertical
             if (Mathf.Abs(Vector3.Dot(wallHit.normal, Vector3.up)) < 0.2f)
             {
                 if (!wallDetectedLastFrame)
                 {
                     Debug.Log("Wall detected");
-                    DrawDebugSphere(wallHit.point, Color.blue, 1f); // wall point
+                    DrawDebugSphere(wallHit.point, Color.blue, 1f);
                     wallDetectedLastFrame = true;
                 }
 
@@ -148,15 +159,18 @@ public class PlayerStateManager : MonoBehaviour
 
                 if (Physics.Raycast(ledgeCheckOrigin, Vector3.down, out RaycastHit floorHit, ledgeCheckHeight, wallLayer))
                 {
-                    //check if hit normal is up (floor) and raycast start inside of wall
+                    // Confirm surface is walkable and we aren't inside geometry
                     if (floorHit.distance > 0.05f && Vector3.Dot(floorHit.normal, Vector3.up) > 0.8f)
                     {
                         if (!ledgeDetectedLastFrame)
                         {
                             Debug.Log("Ledge detected");
-                            DrawDebugSphere(floorHit.point, Color.yellow, 1f); // ledge point
+                            DrawDebugSphere(floorHit.point, Color.yellow, 1f);
                             ledgeDetectedLastFrame = true;
                         }
+
+                        ledgePoint = floorHit.point;
+                        return true;
                     }
                 }
                 else
@@ -165,21 +179,21 @@ public class PlayerStateManager : MonoBehaviour
                 }
             }
         }
-            else
+        else
+        {
+            if (wallDetectedLastFrame)
             {
-                if (wallDetectedLastFrame)
-                {
-                    Debug.Log("Wall no longer detected");
-                    wallDetectedLastFrame = false;
-                }
-
-                ledgeDetectedLastFrame = false;
+                Debug.Log("Wall no longer detected");
+                wallDetectedLastFrame = false;
             }
 
-        // Optional: visualize rays
+            ledgeDetectedLastFrame = false;
+        }
+
         Debug.DrawRay(origin, direction * ledgeRayDistance, Color.red);
+        return false;
     }
-    public GameObject debugSpherePrefab;
+
 
     void DrawDebugSphere(Vector3 position, Color color, float duration = 1f, float size = 0.5f)
     {
