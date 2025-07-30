@@ -8,13 +8,17 @@ public class WalkingState : PlayerStateBase
 
     public override void UpdateState()
     {
-        manager.Look();
+
         manager.HandleMovementInput();
-        manager.ApplyGravityAndJump();
+       // manager.CustomGravity();
 
-        manager.MovePlayer(manager.moveSpeed);
+        manager.MovePlayer();
+        manager.Look();
     }
-
+    public override void FixedUpdateState()
+    {
+        
+    }
     public override void ExitState() {}
 }
 

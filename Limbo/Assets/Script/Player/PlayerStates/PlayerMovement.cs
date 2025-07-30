@@ -1,25 +1,33 @@
 using UnityEngine;
+using System.Collections;
 
-[RequireComponent(typeof(CharacterController))]
+//[RequireComponent(typeof(CharacterController))]
 public class PlayerStateManager : MonoBehaviour
 {
+    [HideInInspector] public Rigidbody rb;
+
     [Header("Movement Settings")]
-    public float moveSpeed = 6f;
+    public float maxSpeed = 6f;
     public float acceleration = 10f;
     public float deceleration = 15f;
+    [HideInInspector] public Vector3 inputDirection = Vector3.zero;
 
     [Header("Look Settings")]
     public float mouseSensitivity = 100f;
     public Transform cameraHolder;
+    public float pitch = 0f;
+    public float yaw = 0f;
 
     [Header("Jump & Gravity")]
-    public float gravity = -9.81f;
-    public float jumpHeight = 2.5f;
-    [HideInInspector] public float verticalVelocity = 0f;
-    [HideInInspector] public Vector3 currentVelocity;
+    public Vector3 gravityDirection = Vector3.down;
+    public  float jumpForce = 7f;
+    public float gravityStrength;
+    public bool inState;
+    public bool isGrounded;
 
-    [Header("Debug")]
+    [Header("State")]
     public string currentStateName;
+    private PlayerStateBase currentState;
 
     [Header("Ledge Detection")]
     private bool wallDetectedLastFrame = false;
@@ -28,62 +36,92 @@ public class PlayerStateManager : MonoBehaviour
     public float ledgeRayDistance = 2f;
     public LayerMask wallLayer;
     public Transform ledgeRaycastOrigin;
+    public bool exitingLedgeHang;
 
-    [HideInInspector] public Vector3 inputDirection = Vector3.zero;
-    [HideInInspector] public CharacterController controller;
+    [Header("Debug")]
     public GameObject debugSpherePrefab;
 
-    public float pitch = 0f;
-    private PlayerStateBase currentState;
-    
+    public bool rotatePlayerToCamera;
+
     void Start()
     {
-        controller = GetComponent<CharacterController>();
+        rb = GetComponent<Rigidbody>();
         Cursor.lockState = CursorLockMode.Locked;
         SwitchState(new IdleState(this));
+        rb.useGravity = false; // Disable Unity's built-in gravity
     }
 
     void Update()
     {
+        isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
         HandleTransitions();
         currentState.UpdateState();
         currentStateName = currentState.GetType().Name;
     }
 
-    void LateUpdate()
+    void FixedUpdate()
     {
-    
+        currentState.FixedUpdateState();
     }
 
+    public void CustomGravity()
+    {
+        Vector3 customGravity = gravityDirection.normalized * gravityStrength;
+        rb.AddForce(customGravity, ForceMode.Acceleration);
+    }
     public void SwitchState(PlayerStateBase newState)
     {
         currentState?.ExitState();
         currentState = newState;
         currentState.EnterState();
     }
+    private void Jump()
+    {
+        // Remove existing velocity in gravity direction to get a consistent jump
+        rb.linearVelocity -= Vector3.Project(rb.linearVelocity, -gravityDirection);
 
+        // Apply jump force opposite to gravity
+        rb.AddForce(-gravityDirection.normalized * jumpForce, ForceMode.VelocityChange);
+    }
     void HandleTransitions()
-    {   
-        if (!(currentState is LedgeHangState) && CheckLedgeDetection(out Vector3 ledgePoint))
+    {
+        if(exitingLedgeHang)
+            StartCoroutine(exitLedgeHang(0.5f));
+
+        if (!(currentState is LedgeHangState) && CheckLedgeDetection(out Vector3 ledgePoint, out Vector3 wallNormal) && !exitingLedgeHang)
         {
-            SwitchState(new LedgeHangState(this, ledgePoint));
-            Debug.Log("ledgeRayDistance = " + ledgeRayDistance);
+            SwitchState(new LedgeHangState(this, ledgePoint, wallNormal));
             return;
         }
         
-        if (!controller.isGrounded)
+        if (inState)
             return;
-
+        
+        if (!isGrounded && !(currentState is AirState))
+        {
+            SwitchState(new AirState(this));
+            return;
+        }
+        
+        if (!isGrounded)
+            return;
+        
         if (inputDirection.magnitude <= 0.1f)
-        {
-            if (!(currentState is IdleState))
-                SwitchState(new IdleState(this));
-        }
-        else
-        {
-            if (!(currentState is WalkingState))
-                SwitchState(new WalkingState(this));
-        }
+            {
+                if (!(currentState is IdleState))
+                    SwitchState(new IdleState(this));
+            }
+            else
+            {
+                if (!(currentState is WalkingState))
+                    SwitchState(new WalkingState(this));
+            }
+    }
+
+    private IEnumerator exitLedgeHang(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        exitingLedgeHang = false;
     }
 
     public void Look()
@@ -92,10 +130,21 @@ public class PlayerStateManager : MonoBehaviour
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
         pitch -= mouseY;
-        pitch = Mathf.Clamp(pitch, -80f, 80f);
+        yaw += mouseX;
 
-        cameraHolder.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
+        pitch = Mathf.Clamp(pitch, -80f, 80f);
+        yaw = Mathf.Clamp(yaw, -360f, 360f);
+        
+        cameraHolder.localRotation = Quaternion.Euler(pitch, yaw, 0f);
+        cameraHolder.position = transform.position + 0.75f * Vector3.up;
+        Quaternion deltaRotation = Quaternion.Euler(0f, mouseX, 0f);
+
+        if (rotatePlayerToCamera)
+        {
+            Quaternion targetRotation = Quaternion.Euler(0f, cameraHolder.eulerAngles.y, 0f);
+            rb.MoveRotation(targetRotation);
+        }
+            
     }
 
     public void HandleMovementInput()
@@ -109,40 +158,39 @@ public class PlayerStateManager : MonoBehaviour
         camForward.y = 0;
         camRight.y = 0;
 
-        inputDirection = (camForward.normalized * input.z + camRight.normalized * input.x).normalized;
+        camForward.Normalize();
+        camRight.Normalize();
+
+        // Only calculate once per frame
+        Vector3 moveDirection = (camForward * input.z + camRight * input.x).normalized;
+        inputDirection = moveDirection;
     }
 
-    public void MovePlayer(float targetSpeed)
+    public void MovePlayer()
     {
-        Vector3 targetVelocity = inputDirection * targetSpeed;
-        Vector3 currentVelocity = Vector3.Lerp(Vector3.zero, targetVelocity, Time.deltaTime * (targetSpeed > 0 ? acceleration : deceleration));
-        Vector3 move = currentVelocity + Vector3.up * verticalVelocity;
-        controller.Move(move * Time.deltaTime);
-    }
+        Vector3 flatVelocity = rb.linearVelocity;
+        flatVelocity.y = 0f;
 
-    public void ApplyGravityAndJump()
-    {
-        if (controller.isGrounded)
-        {
-            if (verticalVelocity < 0f)
-                verticalVelocity = -1f;
+        float targetSpeed = maxSpeed;
+        float speed = Mathf.Lerp(flatVelocity.magnitude, targetSpeed, Time.fixedDeltaTime * (targetSpeed > flatVelocity.magnitude ? acceleration : deceleration));
+        Vector3 move = inputDirection * speed;
+        move.y = rb.linearVelocity.y;
 
-            if (Input.GetButtonDown("Jump"))
-                verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
-        }
-        else
+        rb.linearVelocity = move;
+
+        if (isGrounded && Input.GetButtonDown("Jump"))
         {
-            verticalVelocity += gravity * Time.deltaTime;
+            Jump();
         }
     }
+
     
-
-
-    public bool CheckLedgeDetection(out Vector3 ledgePoint)
+    public bool CheckLedgeDetection(out Vector3 ledgePoint, out Vector3 wallNormal)
     {
         Vector3 origin = cameraHolder.position;
         Vector3 direction = cameraHolder.forward;
         ledgePoint = Vector3.zero;
+        wallNormal = Vector3.zero;
 
         // Forward ray to detect wall
         if (Physics.Raycast(origin, direction, out RaycastHit wallHit, ledgeRayDistance, wallLayer))
@@ -150,6 +198,7 @@ public class PlayerStateManager : MonoBehaviour
             // Check if wall is vertical
             if (Mathf.Abs(Vector3.Dot(wallHit.normal, Vector3.up)) < 0.2f)
             {
+                wallNormal = wallHit.normal;
                 if (!wallDetectedLastFrame)
                 {
                     Debug.Log("Wall detected");
@@ -197,7 +246,6 @@ public class PlayerStateManager : MonoBehaviour
         return false;
     }
 
-
     void DrawDebugSphere(Vector3 position, Color color, float duration = 1f, float size = 0.5f)
     {
         if (debugSpherePrefab == null)
@@ -214,5 +262,4 @@ public class PlayerStateManager : MonoBehaviour
 
         Destroy(sphere, duration);
     }
-
 }
