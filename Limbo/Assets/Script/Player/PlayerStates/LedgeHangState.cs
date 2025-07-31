@@ -26,6 +26,7 @@ public class LedgeHangState : PlayerStateBase
     private bool isHoldingBack = false;
     private float buffer = 10f;
 
+
     public LedgeHangState(PlayerStateManager manager, Vector3 ledgePoint, Vector3 wallNormal) : base(manager)
     {
         this.ledgePoint = ledgePoint;
@@ -36,6 +37,16 @@ public class LedgeHangState : PlayerStateBase
     {
         manager.inState = true;
         manager.rotatePlayerToCamera = false;
+        manager.previousPlayerYaw = manager.transform.eulerAngles.y;
+
+       // Get the yaw (horizontal angle) of the player and camera
+        float playerYaw = manager.transform.eulerAngles.y;
+        float cameraYaw = manager.cameraHolder.eulerAngles.y;
+
+        // Calculate the shortest signed angle between the player and camera yaw
+        // This handles wraparound (e.g., 359° vs 1° becomes +2°, not -358°)
+        // This value is stored to define the "initial" camera offset when entering ledgehang
+        manager.initialYaw = Mathf.DeltaAngle(playerYaw, cameraYaw);
 
         // Reposition to ledge anf face towards wall
         Vector3 hangPosition = ledgePoint - manager.transform.forward * horizontalOffset + Vector3.up * verticalOffset;
@@ -44,29 +55,11 @@ public class LedgeHangState : PlayerStateBase
 
         manager.rb.linearVelocity = Vector3.zero;
         manager.rb.angularVelocity = Vector3.zero;
-
-        /*
-        // ✅ Save current player rotation
-        Quaternion originalPlayerRotation = manager.transform.rotation;
-
-        // ✅ Reorient player to face wall
-        Quaternion targetRotation = Quaternion.LookRotation(-wallNormal, Vector3.up);
-        manager.transform.rotation = targetRotation;
-
-        // ✅ Match cameraHolder rotation to previously saved player rotation
-        manager.cameraHolder.rotation = originalPlayerRotation;
-
-        // ✅ Set pitch and yaw based on new cameraHolder orientation
-        Vector3 camAngles = manager.cameraHolder.localEulerAngles;
-        manager.pitch = (camAngles.x > 180) ? camAngles.x - 360 : camAngles.x;
-        manager.yaw = (camAngles.y > 180) ? camAngles.y - 360 : camAngles.y;
-        */
     }
 
     public override void UpdateState()
     {
         LedgeMovement();
-        //LookLimited();
         manager.Look();
         LedgeJump();
         LedgeDrop();
@@ -76,7 +69,6 @@ public class LedgeHangState : PlayerStateBase
             manager.rb.linearVelocity = Vector3.zero;
             buffer--;
         }
-        //Debug.Log("Velocity before zeroing: " + manager.rb.linearVelocity);
     }
 
     public override void FixedUpdateState()
@@ -151,20 +143,6 @@ public class LedgeHangState : PlayerStateBase
         }
     }
 
-    public void LookLimited()
-    {
-        float mouseX = Input.GetAxis("Mouse X") * manager.mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * manager.mouseSensitivity * Time.deltaTime;
-
-        manager.yaw += mouseX;
-        manager.pitch -= mouseY;
-
-        manager.yaw = Mathf.Clamp(manager.yaw, -maxYaw, maxYaw);
-        manager.pitch = Mathf.Clamp(manager.pitch, -maxPitch, maxPitch);
-
-        manager.cameraHolder.localRotation = Quaternion.Euler(manager.pitch, manager.yaw, 0f);
-    }
-
     public void LedgeJump()
     {
         if (Input.GetButtonDown("Jump"))
@@ -214,16 +192,6 @@ public class LedgeHangState : PlayerStateBase
     {
         manager.inState = false;
         manager.rotatePlayerToCamera = true;
-        /*
-        // Save current cameraHolder rotation
-        Quaternion savedCameraRotation = manager.cameraHolder.rotation;
-        // Apply cameraHolder Y rotation to player using Rigidbody
-        Quaternion targetRotation = Quaternion.Euler(0f, savedCameraRotation.eulerAngles.y, 0f);
-        manager.rb.MoveRotation(targetRotation);
-        // Realign cameraHolder to match player's new forward with current pitch
-        manager.cameraHolder.localRotation = Quaternion.Euler(manager.pitch, 0f, 0f);
-        */
-        Debug.Log("After ExitState6: " + manager.transform.rotation.eulerAngles);
     }
 
 }

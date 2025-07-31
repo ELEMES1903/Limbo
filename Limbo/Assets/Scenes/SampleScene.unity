@@ -2263,6 +2263,7 @@ MonoBehaviour:
   cameraHolder: {fileID: 466872446}
   pitch: 0
   yaw: 0
+  initialYaw: 0
   gravityDirection: {x: 0, y: -1, z: 0}
   jumpForce: 8
   gravityStrength: 9.87
@@ -2278,6 +2279,7 @@ MonoBehaviour:
   exitingLedgeHang: 0
   debugSpherePrefab: {fileID: 2040767784694879412, guid: 02a1d3d6d7d11a64ba57519a4744aca5, type: 3}
   rotatePlayerToCamera: 0
+  previousPlayerYaw: 0
 --- !u!143 &883624255
 CharacterController:
   m_ObjectHideFlags: 0

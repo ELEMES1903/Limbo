@@ -17,6 +17,7 @@ public class PlayerStateManager : MonoBehaviour
     public Transform cameraHolder;
     public float pitch = 0f;
     public float yaw = 0f;
+    public float initialYaw;
 
     [Header("Jump & Gravity")]
     public Vector3 gravityDirection = Vector3.down;
@@ -42,6 +43,7 @@ public class PlayerStateManager : MonoBehaviour
     public GameObject debugSpherePrefab;
 
     public bool rotatePlayerToCamera;
+    public float previousPlayerYaw;
 
     void Start()
     {
@@ -133,18 +135,35 @@ public class PlayerStateManager : MonoBehaviour
         yaw += mouseX;
 
         pitch = Mathf.Clamp(pitch, -80f, 80f);
-        yaw = Mathf.Clamp(yaw, -360f, 360f);
-        
+
+        if (currentState is LedgeHangState)
+        {
+            // Get the current yaw of the player
+            float currentPlayerYaw = transform.eulerAngles.y;
+
+            // Calculate how much the player has rotated since the last frame
+            float playerYawDelta = Mathf.DeltaAngle(previousPlayerYaw, currentPlayerYaw);
+
+            // Add the same delta to the camera yaw
+            yaw += playerYawDelta;
+
+            // Clamp the yaw difference between camera and player
+            float angleDifference = Mathf.DeltaAngle(currentPlayerYaw, yaw);
+            float clampedAngle = Mathf.Clamp(angleDifference, -80f, 80f);
+            yaw = currentPlayerYaw + clampedAngle;
+
+            // Update previousPlayerYaw for the next frame
+            previousPlayerYaw = currentPlayerYaw;
+        }
+
         cameraHolder.localRotation = Quaternion.Euler(pitch, yaw, 0f);
         cameraHolder.position = transform.position + 0.75f * Vector3.up;
-        Quaternion deltaRotation = Quaternion.Euler(0f, mouseX, 0f);
 
         if (rotatePlayerToCamera)
         {
             Quaternion targetRotation = Quaternion.Euler(0f, cameraHolder.eulerAngles.y, 0f);
             rb.MoveRotation(targetRotation);
         }
-            
     }
 
     public void HandleMovementInput()
