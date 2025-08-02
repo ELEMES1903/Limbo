@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
 
 //[RequireComponent(typeof(CharacterController))]
 public class PlayerStateManager : MonoBehaviour
@@ -18,10 +18,12 @@ public class PlayerStateManager : MonoBehaviour
     public float pitch = 0f;
     public float yaw = 0f;
     public float initialYaw;
+    public bool rotatePlayerToCamera;
+    public float previousPlayerYaw;
 
     [Header("Jump & Gravity")]
     public Vector3 gravityDirection = Vector3.down;
-    public  float jumpForce = 7f;
+    public float jumpForce = 7f;
     public float gravityStrength;
     public bool inState;
     public bool isGrounded;
@@ -31,19 +33,19 @@ public class PlayerStateManager : MonoBehaviour
     private PlayerStateBase currentState;
 
     [Header("Ledge Detection")]
-    private bool wallDetectedLastFrame = false;
-    private bool ledgeDetectedLastFrame = false;
-    public float ledgeCheckHeight = 1.5f;
-    public float ledgeRayDistance = 2f;
+    public float ledgeCheckHeight = 0.5f;
+    public float ledgeRayDistance = 1f;
     public LayerMask wallLayer;
     public Transform ledgeRaycastOrigin;
-    public bool exitingLedgeHang;
+
+    [Header("Rope")]
+    public float ropeDetectDistance = 0.5f;
+    public LayerMask ropeLayer;
+    public HingeJoint hinge;
 
     [Header("Debug")]
-    public GameObject debugSpherePrefab;
-
-    public bool rotatePlayerToCamera;
-    public float previousPlayerYaw;
+    public float timesToResetVelocity = 10f;
+    private Dictionary<string, float> timers = new Dictionary<string, float>();
 
     void Start()
     {
@@ -59,6 +61,7 @@ public class PlayerStateManager : MonoBehaviour
         HandleTransitions();
         currentState.UpdateState();
         currentStateName = currentState.GetType().Name;
+        UpdateTimers(Time.deltaTime);
     }
 
     void FixedUpdate()
@@ -76,6 +79,7 @@ public class PlayerStateManager : MonoBehaviour
         currentState?.ExitState();
         currentState = newState;
         currentState.EnterState();
+        timesToResetVelocity = 10;
     }
     private void Jump()
     {
@@ -87,43 +91,40 @@ public class PlayerStateManager : MonoBehaviour
     }
     void HandleTransitions()
     {
-        if(exitingLedgeHang)
-            StartCoroutine(exitLedgeHang(0.5f));
-
-        if (!(currentState is LedgeHangState) && CheckLedgeDetection(out Vector3 ledgePoint, out Vector3 wallNormal) && !exitingLedgeHang)
+        if (!(currentState is LedgeHangState) && IsTimerDone("LedgeHangCooldown") && CheckLedgeDetection(out Vector3 ledgePoint, out Vector3 wallNormal))
         {
             SwitchState(new LedgeHangState(this, ledgePoint, wallNormal));
             return;
         }
-        
+
+        if (!(currentState is RopeHangState) && IsTimerDone("RopeHangCooldown") && CheckRopeDetection(out RaycastHit hit))
+        {
+            SwitchState(new RopeHangState(this, hit));
+            return;
+        }
+
         if (inState)
             return;
-        
+
         if (!isGrounded && !(currentState is AirState))
         {
             SwitchState(new AirState(this));
             return;
         }
-        
+
         if (!isGrounded)
             return;
-        
-        if (inputDirection.magnitude <= 0.1f)
-            {
-                if (!(currentState is IdleState))
-                    SwitchState(new IdleState(this));
-            }
-            else
-            {
-                if (!(currentState is WalkingState))
-                    SwitchState(new WalkingState(this));
-            }
-    }
 
-    private IEnumerator exitLedgeHang(float duration)
-    {
-        yield return new WaitForSeconds(duration);
-        exitingLedgeHang = false;
+        if (inputDirection.magnitude <= 0.1f)
+        {
+            if (!(currentState is IdleState))
+                SwitchState(new IdleState(this));
+        }
+        else
+        {
+            if (!(currentState is WalkingState))
+                SwitchState(new WalkingState(this));
+        }
     }
 
     public void Look()
@@ -203,7 +204,19 @@ public class PlayerStateManager : MonoBehaviour
         }
     }
 
-    
+    public bool CheckRopeDetection(out RaycastHit hit)
+    {
+        Vector3 origin = cameraHolder.position;
+        Vector3 direction = cameraHolder.forward;
+
+        if (Physics.Raycast(origin, direction, out hit, ropeDetectDistance, ropeLayer))
+        {
+            return true;
+        }
+        hit = default;
+        return false;
+    }
+
     public bool CheckLedgeDetection(out Vector3 ledgePoint, out Vector3 wallNormal)
     {
         Vector3 origin = cameraHolder.position;
@@ -218,12 +231,6 @@ public class PlayerStateManager : MonoBehaviour
             if (Mathf.Abs(Vector3.Dot(wallHit.normal, Vector3.up)) < 0.2f)
             {
                 wallNormal = wallHit.normal;
-                if (!wallDetectedLastFrame)
-                {
-                    Debug.Log("Wall detected");
-                    DrawDebugSphere(wallHit.point, Color.blue, 1f);
-                    wallDetectedLastFrame = true;
-                }
 
                 // Offset ledge check origin slightly in wall direction
                 Vector3 ledgeCheckOrigin = wallHit.point + direction.normalized * 0.1f + Vector3.up * ledgeCheckHeight;
@@ -233,52 +240,47 @@ public class PlayerStateManager : MonoBehaviour
                     // Confirm surface is walkable and we aren't inside geometry
                     if (floorHit.distance > 0.05f && Vector3.Dot(floorHit.normal, Vector3.up) > 0.8f)
                     {
-                        if (!ledgeDetectedLastFrame)
-                        {
-                            Debug.Log("Ledge detected");
-                            DrawDebugSphere(floorHit.point, Color.yellow, 1f);
-                            ledgeDetectedLastFrame = true;
-                        }
-
                         ledgePoint = floorHit.point;
                         return true;
                     }
                 }
-                else
-                {
-                    ledgeDetectedLastFrame = false;
-                }
             }
         }
-        else
-        {
-            if (wallDetectedLastFrame)
-            {
-                Debug.Log("Wall no longer detected");
-                wallDetectedLastFrame = false;
-            }
 
-            ledgeDetectedLastFrame = false;
-        }
-
-        Debug.DrawRay(origin, direction * ledgeRayDistance, Color.red);
+        Vector3 mockLedgeCheckOrigin = origin + direction.normalized * ledgeRayDistance + direction.normalized * 0.1f + Vector3.up * ledgeCheckHeight;
+        Debug.DrawRay(origin, direction * ledgeRayDistance, Color.red); //draw wall check ray
+        Debug.DrawRay(mockLedgeCheckOrigin, Vector3.down * ledgeCheckHeight, Color.blue); //draw wall check ray
         return false;
     }
 
-    void DrawDebugSphere(Vector3 position, Color color, float duration = 1f, float size = 0.5f)
+    public void ResetPlayerVelocity()
     {
-        if (debugSpherePrefab == null)
+        if (timesToResetVelocity > 0)
         {
-            Debug.LogWarning("No debugSpherePrefab assigned.");
-            return;
+            rb.linearVelocity = Vector3.zero;
+            timesToResetVelocity--;
         }
+    }
 
-        GameObject sphere = Instantiate(debugSpherePrefab, position, Quaternion.identity);
-        sphere.transform.localScale = Vector3.one * size;
+    public void DestroyHinge() { if (hinge != null) { Destroy(hinge); } }
 
-        var renderer = sphere.GetComponent<Renderer>();
-        if (renderer != null) renderer.material.color = color;
+    private void UpdateTimers(float deltaTime)
+    {
+        var keys = new List<string>(timers.Keys);
+        foreach (var key in keys)
+        {
+            timers[key] -= deltaTime;
+            if (timers[key] <= 0f)
+                timers.Remove(key);
+        }
+    }
+    public void StartTimer(string timerName, float duration)
+    {
+        timers[timerName] = duration;
 
-        Destroy(sphere, duration);
+    }
+    public bool IsTimerDone(string timerName)
+    {
+        return !timers.ContainsKey(timerName);
     }
 }

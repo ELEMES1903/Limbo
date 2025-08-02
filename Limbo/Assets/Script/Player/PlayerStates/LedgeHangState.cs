@@ -1,12 +1,14 @@
 using UnityEngine;
+using System.Collections;
 
 public class LedgeHangState : PlayerStateBase
 {
-
-    Vector3 wallNormal;
+    [Header("Parameters")]
+    private Vector3 wallNormal;
+    private Vector3 ledgePoint;
 
     [Header("LedgeHang Movement")]
-    private Vector3 ledgePoint;
+
     private float horizontalOffset = 0.7f;
     private float verticalOffset = -1.0f;
     private float hangMoveSpeed = 4f;
@@ -18,14 +20,15 @@ public class LedgeHangState : PlayerStateBase
 
     [Header("Ledge Jump")]
     public float ledgeJumpDistance = 7f;
-    public float ledgeJumpHeight = 3f;
+    public float ledgeJumpHeight = 6f;
 
     [Header("Ledge Drop")]
     private float backHangTimer = 0f;
     private const float backHangThreshold = 1f;
     private bool isHoldingBack = false;
-    private float buffer = 10f;
 
+    [Header("Ledge Drop")]
+    private float ledgeHangCooldown = 0.5f;
 
     public LedgeHangState(PlayerStateManager manager, Vector3 ledgePoint, Vector3 wallNormal) : base(manager)
     {
@@ -48,27 +51,54 @@ public class LedgeHangState : PlayerStateBase
         // This value is stored to define the "initial" camera offset when entering ledgehang
         manager.initialYaw = Mathf.DeltaAngle(playerYaw, cameraYaw);
 
-        // Reposition to ledge anf face towards wall
+        //manager.StartCoroutine(SmoothToLedgeHang(ledgePoint, wallNormal));
+
+        //Reposition to ledge anf face towards wall
+        manager.transform.forward = -wallNormal;
         Vector3 hangPosition = ledgePoint - manager.transform.forward * horizontalOffset + Vector3.up * verticalOffset;
         manager.rb.position = hangPosition;
-        manager.transform.forward = -wallNormal;
 
+        // reset velocity
         manager.rb.linearVelocity = Vector3.zero;
         manager.rb.angularVelocity = Vector3.zero;
     }
+    /*
+    private IEnumerator SmoothToLedgeHang(Vector3 ledgePoint, Vector3 wallNormal)
+    {
+        // Target position = slightly below the ledge and offset from the wall
+        Vector3 targetPosition = ledgePoint - manager.transform.forward * horizontalOffset + Vector3.up * verticalOffset;
+        Quaternion targetRotation = Quaternion.LookRotation(-wallNormal);
 
+        Vector3 startPosition = manager.rb.position;
+        Quaternion startRotation = manager.transform.rotation;
+
+        float duration = 0.2f;
+        float t = 0f;
+
+        // Freeze player motion while transitioning
+        manager.rb.isKinematic = true;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+            manager.rb.position = Vector3.Lerp(startPosition, targetPosition, t);
+            manager.transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
+            yield return null;
+        }
+
+        // Final snap to exact position and rotation
+        manager.rb.position = targetPosition;
+        manager.transform.rotation = targetRotation;
+        manager.rb.isKinematic = false;
+    }
+    */
     public override void UpdateState()
     {
         LedgeMovement();
         manager.Look();
         LedgeJump();
         LedgeDrop();
-
-        if (buffer > 0f)
-        {
-            manager.rb.linearVelocity = Vector3.zero;
-            buffer--;
-        }
+        manager.ResetPlayerVelocity();
     }
 
     public override void FixedUpdateState()
@@ -76,10 +106,7 @@ public class LedgeHangState : PlayerStateBase
 
     }
     public void LedgeMovement()
-    {
-        if (manager.exitingLedgeHang)
-            return;
-            
+    {            
         // Raycasting to find wall for alignment and movement direction
         Vector3 origin = manager.ledgeRaycastOrigin.position;
         Vector3 forward = manager.ledgeRaycastOrigin.forward;
@@ -150,14 +177,10 @@ public class LedgeHangState : PlayerStateBase
             // Calculate jump direction
             Vector3 jumpDirection = wallNormal.normalized * ledgeJumpDistance + Vector3.up * ledgeJumpHeight;
 
-            // Mark we're exiting ledge hang
-            manager.exitingLedgeHang = true;
-
             // Exit ledge hang state
             manager.SwitchState(new AirState(manager));
 
             // Clear current velocity and apply the jump force
-            //manager.rb.linearVelocity = Vector3.zero; // Optional, prevents stacking velocity
             manager.rb.AddForce(jumpDirection, ForceMode.VelocityChange);
         }
     }
@@ -176,7 +199,6 @@ public class LedgeHangState : PlayerStateBase
 
             if (backHangTimer >= backHangThreshold)
             {
-                manager.exitingLedgeHang = true;
                 manager.SwitchState(new AirState(manager));
             }
         }
@@ -192,6 +214,7 @@ public class LedgeHangState : PlayerStateBase
     {
         manager.inState = false;
         manager.rotatePlayerToCamera = true;
+        manager.StartTimer("LedgeHangCooldown", ledgeHangCooldown);
     }
 
 }

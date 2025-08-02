@@ -25,5 +25,6 @@ public class AirState : PlayerStateBase
 
     public override void ExitState()
     { 
+        
     }
 }
