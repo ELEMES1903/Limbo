@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Dreamteck.Splines;
 
-[ExecuteAlways]
 [RequireComponent(typeof(LineRenderer))]
 public class VerletRope : MonoBehaviour
 {
@@ -25,22 +25,24 @@ public class VerletRope : MonoBehaviour
     [Header("Gizmos")]
     public bool showGizmos = true;
 
+    [Header("Spline")]
+    public SplineComputer splineComputer;
+
     private LineRenderer lineRenderer;
 
     private List<Vector3> positions = new List<Vector3>();
     private List<Vector3> prevPositions = new List<Vector3>();
 
-    void OnValidate()
+    void Start()
     {
         segmentCount = Mathf.Max(2, segmentCount);
         segmentLength = Mathf.Max(0.01f, segmentLength);
         collisionRadius = Mathf.Max(0f, collisionRadius);
         weight = Mathf.Max(0f, weight);
         damping = Mathf.Clamp01(damping);
-    }
 
-    void Start()
-    {
+        splineComputer = GetComponent<SplineComputer>();
+
         Initialize();
     }
 
@@ -73,16 +75,54 @@ public class VerletRope : MonoBehaviour
         Simulate(Time.deltaTime);
         ApplyConstraints();
         ResolveCollisions();
+        SplineSetUp();
         UpdateLineRenderer();
+    }
+
+    void SplineSetUp()
+    {
+        if (splineComputer != null)
+        {
+            int count = segmentCount;
+            SplinePoint[] splinePoints = new SplinePoint[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 pos = positions[i];
+
+                // Create a SplinePoint at the current rope node position
+                splinePoints[i] = new SplinePoint(pos);
+
+                // Optional: customize tangents/normals here if you want advanced control
+            }
+
+            // Assign points to the spline
+            splineComputer.SetPoints(splinePoints);
+            splineComputer.RebuildImmediate();
+        }
     }
 
     void Simulate(float deltaTime)
     {
+        const float minVelocityThreshold = 0.001f; // Dead zone
+        const float frictionDamping = 0.98f;       // Passive damping
+
         for (int i = 1; i < positions.Count - 1; i++)
         {
             Vector3 current = positions[i];
             Vector3 prev = prevPositions[i];
             Vector3 velocity = (current - prev) * damping;
+
+            // Dead zone: stop jitter
+            if (velocity.magnitude < minVelocityThreshold)
+            {
+                velocity = Vector3.zero;
+                prev = current;
+            }
+            else
+            {
+                velocity *= frictionDamping;
+            }
 
             Vector3 next = current + velocity + Vector3.down * weight * deltaTime * deltaTime;
 
@@ -90,6 +130,7 @@ public class VerletRope : MonoBehaviour
             positions[i] = next;
         }
     }
+
 
     void ApplyConstraints()
     {
