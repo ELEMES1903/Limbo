@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Dreamteck.Splines;
 
 //[RequireComponent(typeof(CharacterController))]
 public class PlayerStateManager : MonoBehaviour
@@ -39,9 +40,11 @@ public class PlayerStateManager : MonoBehaviour
     public Transform ledgeRaycastOrigin;
 
     [Header("Rope")]
-    public float ropeDetectDistance = 0.5f;
-    public LayerMask ropeLayer;
-    public HingeJoint hinge;
+    public SplineFollower splineFollower;
+    public SplineComputer splineComputer;
+    public bool ropeDetected;
+    public GameObject ropeGrabPoint;
+    public ConfigurableJoint configJoint;
 
     [Header("Debug")]
     public float timesToResetVelocity = 10f;
@@ -53,6 +56,10 @@ public class PlayerStateManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         SwitchState(new IdleState(this));
         rb.useGravity = false; // Disable Unity's built-in gravity
+
+        configJoint = GetComponent<ConfigurableJoint>();
+        ropeGrabPoint = GameObject.Find("RopeGrabPoint");
+        splineFollower = ropeGrabPoint.transform.GetComponent<SplineFollower>();
     }
 
     void Update()
@@ -97,9 +104,9 @@ public class PlayerStateManager : MonoBehaviour
             return;
         }
 
-        if (!(currentState is RopeHangState) && IsTimerDone("RopeHangCooldown") && CheckRopeDetection(out RaycastHit hit))
+        if (!(currentState is RopeHangState) && IsTimerDone("RopeHangCooldown") && ropeDetected)
         {
-            SwitchState(new RopeHangState(this, hit));
+            SwitchState(new RopeHangState(this));
             return;
         }
 
@@ -204,19 +211,6 @@ public class PlayerStateManager : MonoBehaviour
         }
     }
 
-    public bool CheckRopeDetection(out RaycastHit hit)
-    {
-        Vector3 origin = cameraHolder.position;
-        Vector3 direction = cameraHolder.forward;
-
-        if (Physics.Raycast(origin, direction, out hit, ropeDetectDistance, ropeLayer))
-        {
-            return true;
-        }
-        hit = default;
-        return false;
-    }
-
     public bool CheckLedgeDetection(out Vector3 ledgePoint, out Vector3 wallNormal)
     {
         Vector3 origin = cameraHolder.position;
@@ -261,8 +255,6 @@ public class PlayerStateManager : MonoBehaviour
             timesToResetVelocity--;
         }
     }
-
-    public void DestroyHinge() { if (hinge != null) { Destroy(hinge); } }
 
     private void UpdateTimers(float deltaTime)
     {

@@ -1,6 +1,6 @@
 using Unity.VisualScripting;
 using UnityEngine;
-
+using Dreamteck.Splines;
 public class RopeHangState : PlayerStateBase
 {
     [Header("Parameters")]
@@ -14,25 +14,16 @@ public class RopeHangState : PlayerStateBase
 
     RaycastHit hit;
     
-    public RopeHangState(PlayerStateManager manager, RaycastHit hit) : base(manager)
-    {
-        this.hit = hit;
-    }
+    public RopeHangState(PlayerStateManager manager) : base(manager){ }
     public override void EnterState()
     {
-        Debug.Log("enter");
-        HingeJointSetUp();
-
         manager.inState = true;
         manager.rotatePlayerToCamera = false;
 
-        Rigidbody ropeRb = hit.collider.GetComponent<Rigidbody>();
-        manager.hinge.connectedBody = ropeRb;
-        hit.collider.GetComponent<CapsuleCollider>().enabled = false;
-
-        manager.transform.forward = -hit.normal;
-        Vector3 hangPosition = hit.point - manager.transform.forward * horizontalOffset;
-        manager.rb.position = hangPosition;
+        manager.splineFollower.direction = GetLandingDirection(manager.ropeGrabPoint.transform.position, manager.ropeGrabPoint.transform.forward, manager.splineFollower);
+        manager.configJoint.connectedBody = manager.ropeGrabPoint.transform.GetComponent<Rigidbody>();
+        
+        manager.transform.position = manager.ropeGrabPoint.transform.position;
 
         // reset velocity
         manager.rb.linearVelocity = Vector3.zero;
@@ -41,56 +32,26 @@ public class RopeHangState : PlayerStateBase
     public override void UpdateState()
     {
         manager.Look();
-        RopeMovement();
-        RopeDrop();
-        manager.ResetPlayerVelocity();
+        manager.CustomGravity();
+        //manager.ResetPlayerVelocity();
     }
     public override void FixedUpdateState()
     {
         
     }
-    private void RopeMovement()
+
+    Spline.Direction GetLandingDirection(Vector3 position, Vector3 forward, SplineFollower follower) 
     {
-        Debug.Log("hi");
-        Debug.DrawRay(manager.transform.position, -ropeNormal * 2f, Color.yellow);
-        Rigidbody ropeRb = manager.hinge.connectedBody;
-
-        // Input
-        float h = Input.GetAxis("Horizontal"); // A/D or Left/Right
-        float v = Input.GetAxis("Vertical");   // W/S or Up/Down
-
-        // Optional: Get swing direction based on camera or player orientation
-        Vector3 swingDirection = (manager.cameraHolder.right * h + manager.cameraHolder.forward * v).normalized;
-
-        // Remove upward component to avoid climbing
-        swingDirection = Vector3.ProjectOnPlane(swingDirection, Vector3.up);
-
-        // Apply force to rope segment
-        float swingForce = 30f;
-        ropeRb.AddForce(swingDirection * swingForce, ForceMode.Force);
-    }
-    private void RopeDrop()
-    {
-        if (Input.GetKey(KeyCode.Q))
-        {
-            manager.SwitchState(new AirState(manager));
-        }
+        SplineSample result = new();
+        follower.Project(position, ref result);
+        float dot = Vector3.Dot(result.forward, forward);
+        manager.splineFollower.SetPercent(result.percent);
+        return (Spline.Direction)Mathf.Sign(dot);
     }
 
-    private void HingeJointSetUp()
-    {
-        manager.hinge = manager.gameObject.AddComponent<HingeJoint>();
-    }
     public override void ExitState()
     {
-        manager.inState = false;
-        manager.rotatePlayerToCamera = true;
-
-        hit.collider.GetComponent<CapsuleCollider>().enabled = true;
-
-        manager.StartTimer("RopeHangCooldown", RopeHangCooldown);
-
-        manager.DestroyHinge();
-        Debug.Log("exit");
+        manager.ropeDetected = false;
+        manager.StartTimer("LedgeHangCooldown", RopeHangCooldown);
     }
 }

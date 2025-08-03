@@ -1,6 +1,8 @@
 using UnityEngine;
 using Dreamteck.Splines;
 
+//Credit and Scource: https://github.com/GaryMcWhorter/Verlet-Chain-Unity
+
 [RequireComponent(typeof(LineRenderer))]
 public class Rope : MonoBehaviour
 {
@@ -20,7 +22,7 @@ public class Rope : MonoBehaviour
 
     [SerializeField, Tooltip("Works best with a lower value")] float gravityStrength = 2;
 
-    [SerializeField, Tooltip("The number of chain links. Decreases performance with high values and high iteration")] int totalNodes = 100;
+    [SerializeField, Tooltip("The number of chain links. Decreases performance with high values and high iteration")] int totalNodes = 20;
 
     [SerializeField, Range(0, 1), Tooltip("Modifier to dampen velocity so the simulation can stabilize")] float velocityDampen = 0.95f;
 
@@ -57,12 +59,22 @@ public class Rope : MonoBehaviour
     GameObject nodeTester;
     Matrix4x4[] matrices;
 
+    [Header("Player Detection")]
     private SplineComputer splineComputer;
+    private GameObject player;
+    public bool showPlayerCollisionRadius = true;
+    public Color playerCollisionColor = Color.red;
+    public float playerCollisionRadius = 0.5f;
+    private bool playerDetected = false;
+
+    [SerializeField, Tooltip("Layers the rope should ignore during collision")] 
+    LayerMask ignoreCollisionLayers;
 
 
     void Awake()
     {
         splineComputer = GetComponent<SplineComputer>();
+        player = GameObject.FindWithTag("Player");
 
         currentNodePositions = new Vector3[totalNodes];
         previousNodePositions = new Vector3[totalNodes];
@@ -110,7 +122,7 @@ public class Rope : MonoBehaviour
         if (link != null && linkMaterial != null)
         {
             // Instanced drawing here is really performant over using GameObjects
-            Graphics.DrawMeshInstanced(link, 0, linkMaterial, matrices, totalNodes);  
+            Graphics.DrawMeshInstanced(link, 0, linkMaterial, matrices, totalNodes);
         }
     }
 
@@ -130,14 +142,16 @@ public class Rope : MonoBehaviour
 
         SetAngles();
         TranslateMatrices();
-        
+
+        PlayerDetection();
+
         if (splineComputer != null)
         {
             for (int i = 0; i < totalNodes; i++)
             {
                 // Get current node position
                 Vector3 nodePos = currentNodePositions[i];
-                
+
                 // Update spline point position
                 splineComputer.SetPointPosition(i, nodePos);
             }
@@ -163,35 +177,35 @@ public class Rope : MonoBehaviour
             currentNodePositions[i] = newPos;
         }
     }
-    
+
     private void AdjustCollisions()
     {
         for (int i = 0; i < totalNodes; i++)
         {
-            if(i % 2 == 0) continue;
+            if (i % 2 == 0) continue;
 
             int result = -1;
-            result = Physics.OverlapSphereNonAlloc(currentNodePositions[i], nodeColliderRadius + 0.01f, colliderHitBuffer, ~(1 << 8));
+            result = Physics.OverlapSphereNonAlloc(currentNodePositions[i], nodeColliderRadius + 0.01f, colliderHitBuffer, ~ignoreCollisionLayers.value);
 
             // if (result > 0)
             // {
-                for (int n = 0; n < result; n++)
+            for (int n = 0; n < result; n++)
+            {
+                // if (colliderHitBuffer[n].gameObject.layer != 8)
                 {
-                    // if (colliderHitBuffer[n].gameObject.layer != 8)
-                    {
-                        Vector3 colliderPosition = colliderHitBuffer[n].transform.position;
-                        Quaternion colliderRotation = colliderHitBuffer[n].gameObject.transform.rotation;
+                    Vector3 colliderPosition = colliderHitBuffer[n].transform.position;
+                    Quaternion colliderRotation = colliderHitBuffer[n].gameObject.transform.rotation;
 
-                        Vector3 dir;
-                        float distance;
+                    Vector3 dir;
+                    float distance;
 
-                        Physics.ComputePenetration(nodeCollider, currentNodePositions[i], Quaternion.identity, colliderHitBuffer[n], colliderPosition, colliderRotation, out dir, out distance);
-                        
-                        currentNodePositions[i] += dir * distance;
-                    }
+                    Physics.ComputePenetration(nodeCollider, currentNodePositions[i], Quaternion.identity, colliderHitBuffer[n], colliderPosition, colliderRotation, out dir, out distance);
+
+                    currentNodePositions[i] += dir * distance;
                 }
+            }
             // }
-        }    
+        }
     }
 
     private void ApplyConstraint()
@@ -241,14 +255,14 @@ public class Rope : MonoBehaviour
             var node2 = currentNodePositions[i + 1];
 
             var dir = (node2 - node1).normalized;
-            if(dir != Vector3.zero)
+            if (dir != Vector3.zero)
             {
-                if( i > 0)
+                if (i > 0)
                 {
                     Quaternion desiredRotation = Quaternion.LookRotation(dir, Vector3.right);
                     currentNodeRotations[i + 1] = desiredRotation;
                 }
-                else if( i < totalNodes - 1)
+                else if (i < totalNodes - 1)
                 {
                     Quaternion desiredRotation = Quaternion.LookRotation(dir, Vector3.right);
                     currentNodeRotations[i + 1] = desiredRotation;
@@ -260,7 +274,7 @@ public class Rope : MonoBehaviour
                 }
             }
 
-            if( i % 2 == 0 && i != 0)
+            if (i % 2 == 0 && i != 0)
             {
                 currentNodeRotations[i + 1] *= Quaternion.Euler(0, 0, 90);
             }
@@ -269,7 +283,7 @@ public class Rope : MonoBehaviour
 
     void TranslateMatrices()
     {
-        for(int i = 0; i < totalNodes; i++)
+        for (int i = 0; i < totalNodes; i++)
         {
             matrices[i].SetTRS(currentNodePositions[i], currentNodeRotations[i], Vector3.one);
         }
@@ -289,4 +303,38 @@ public class Rope : MonoBehaviour
         lineRenderer.SetPositions(linePositions);
     }
 
+    public void PlayerDetection()
+    {
+        if (player == null) return;
+
+        Vector3 playerPos = player.transform.position;
+        float sqrRadius = playerCollisionRadius * playerCollisionRadius;
+
+        for (int i = 0; i < totalNodes; i++)
+        {
+            if ((currentNodePositions[i] - playerPos).sqrMagnitude < sqrRadius && !playerDetected)
+            {
+                PlayerStateManager playerMovement = player.transform.GetComponent<PlayerStateManager>();
+                playerMovement.splineFollower.spline = splineComputer;
+
+                playerMovement.splineComputer = splineComputer;
+
+                playerMovement.ropeDetected = true;
+                playerDetected = true;
+
+                Debug.Log("Rope touched player!");
+                // Your logic here
+                break;
+            }
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (showPlayerCollisionRadius && player != null)
+        {
+            Gizmos.color = playerCollisionColor;
+            Gizmos.DrawWireSphere(player.transform.position, playerCollisionRadius);
+        }
+    }
 }
