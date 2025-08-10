@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.InputSystem;
 
 public class LedgeHangState : PlayerStateBase
 {
@@ -13,6 +14,7 @@ public class LedgeHangState : PlayerStateBase
     private float verticalOffset = -1.0f;
     private float hangMoveSpeed = 4f;
     private float rotationSpeed = 5f;
+    private float moveInput;
 
     [Header("Ledge Camera")]
     public float maxYaw = 90f;
@@ -21,11 +23,7 @@ public class LedgeHangState : PlayerStateBase
     [Header("Ledge Jump")]
     public float ledgeJumpDistance = 7f;
     public float ledgeJumpHeight = 6f;
-
-    [Header("Ledge Drop")]
-    private float backHangTimer = 0f;
-    private const float backHangThreshold = 1f;
-    private bool isHoldingBack = false;
+    private bool ledgeJumpInputDetected;
 
     [Header("Ledge Drop")]
     private float ledgeHangCooldown = 0.5f;
@@ -38,20 +36,15 @@ public class LedgeHangState : PlayerStateBase
 
     public override void EnterState()
     {
+        manager.playerInputActions.LedgeHang.LedgeJump.performed += DetectLedgeJumpInput;
+        manager.playerInputActions.LedgeHang.LedgeDrop.performed += LedgeDrop;
+        manager.playerInputActions.LedgeHang.Enable();
+
         manager.inState = true;
         manager.rotatePlayerToCamera = false;
         manager.previousPlayerYaw = manager.transform.eulerAngles.y;
 
-       // Get the yaw (horizontal angle) of the player and camera
-        float playerYaw = manager.transform.eulerAngles.y;
-        float cameraYaw = manager.cameraHolder.eulerAngles.y;
-
-        // Calculate the shortest signed angle between the player and camera yaw
-        // This handles wraparound (e.g., 359° vs 1° becomes +2°, not -358°)
-        // This value is stored to define the "initial" camera offset when entering ledgehang
-        manager.initialYaw = Mathf.DeltaAngle(playerYaw, cameraYaw);
-
-        //manager.StartCoroutine(SmoothToLedgeHang(ledgePoint, wallNormal));
+        CalibrateCamera();
 
         //Reposition to ledge anf face towards wall
         manager.transform.forward = -wallNormal;
@@ -62,51 +55,34 @@ public class LedgeHangState : PlayerStateBase
         manager.rb.linearVelocity = Vector3.zero;
         manager.rb.angularVelocity = Vector3.zero;
     }
-    /*
-    private IEnumerator SmoothToLedgeHang(Vector3 ledgePoint, Vector3 wallNormal)
-    {
-        // Target position = slightly below the ledge and offset from the wall
-        Vector3 targetPosition = ledgePoint - manager.transform.forward * horizontalOffset + Vector3.up * verticalOffset;
-        Quaternion targetRotation = Quaternion.LookRotation(-wallNormal);
 
-        Vector3 startPosition = manager.rb.position;
-        Quaternion startRotation = manager.transform.rotation;
-
-        float duration = 0.2f;
-        float t = 0f;
-
-        // Freeze player motion while transitioning
-        manager.rb.isKinematic = true;
-
-        while (t < 1f)
-        {
-            t += Time.deltaTime / duration;
-            manager.rb.position = Vector3.Lerp(startPosition, targetPosition, t);
-            manager.transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
-            yield return null;
-        }
-
-        // Final snap to exact position and rotation
-        manager.rb.position = targetPosition;
-        manager.transform.rotation = targetRotation;
-        manager.rb.isKinematic = false;
-    }
-    */
     public override void UpdateState()
     {
-        LedgeMovement();
+        moveInput = manager.playerInputActions.LedgeHang.MoveAlongLedge.ReadValue<float>();
+
         manager.Look();
-        LedgeJump();
-        LedgeDrop();
         manager.ResetPlayerVelocity();
     }
 
     public override void FixedUpdateState()
     {
+        LedgeMovement();
+        LedgeJump();
+    }
 
+    private void CalibrateCamera()
+    {
+        // Get the yaw (horizontal angle) of the player and camera
+        float playerYaw = manager.transform.eulerAngles.y;
+        float cameraYaw = manager.cameraHolder.eulerAngles.y;
+
+        // Calculate the shortest signed angle between the player and camera yaw
+        // This handles wraparound (e.g., 359° vs 1° becomes +2°, not -358°)
+        // This value is stored to define the "initial" camera offset when entering ledgehang
+        manager.initialYaw = Mathf.DeltaAngle(playerYaw, cameraYaw);
     }
     public void LedgeMovement()
-    {            
+    {
         // Raycasting to find wall for alignment and movement direction
         Vector3 origin = manager.ledgeRaycastOrigin.position;
         Vector3 forward = manager.ledgeRaycastOrigin.forward;
@@ -152,12 +128,11 @@ public class LedgeHangState : PlayerStateBase
         if (!gotWall) return;
 
         wallNormal = wallHit.normal;
-        float input = Input.GetAxisRaw("Horizontal");
 
-        if (Mathf.Abs(input) > 0.1f)
+        if (Mathf.Abs(moveInput) > 0.1f)
         {
             Vector3 wallRight = Vector3.Cross(Vector3.up, wallNormal);
-            Vector3 moveDir = -wallRight * input;
+            Vector3 moveDir = -wallRight * moveInput;
 
             // ✅ Move with Rigidbody
             Vector3 targetPosition = manager.rb.position + moveDir * hangMoveSpeed * Time.deltaTime;
@@ -169,10 +144,10 @@ public class LedgeHangState : PlayerStateBase
             manager.rb.MoveRotation(newRotation);
         }
     }
-
+    public void DetectLedgeJumpInput(InputAction.CallbackContext context) { ledgeJumpInputDetected = true; }
     public void LedgeJump()
     {
-        if (Input.GetButtonDown("Jump"))
+        if (ledgeJumpInputDetected)
         {
             // Calculate jump direction
             Vector3 jumpDirection = wallNormal.normalized * ledgeJumpDistance + Vector3.up * ledgeJumpHeight;
@@ -182,39 +157,19 @@ public class LedgeHangState : PlayerStateBase
 
             // Clear current velocity and apply the jump force
             manager.rb.AddForce(jumpDirection, ForceMode.VelocityChange);
+
+            ledgeJumpInputDetected = false;
         }
     }
-
-    private void LedgeDrop()
-    {
-        if (Input.GetKey(KeyCode.S))
-        {
-            if (!isHoldingBack)
-            {
-                isHoldingBack = true;
-                backHangTimer = 0f;
-            }
-
-            backHangTimer += Time.deltaTime;
-
-            if (backHangTimer >= backHangThreshold)
-            {
-                manager.SwitchState(new AirState(manager));
-            }
-        }
-        else
-        {
-            // Reset if they let go early
-            isHoldingBack = false;
-            backHangTimer = 0f;
-        }
-    }
+    private void LedgeDrop(InputAction.CallbackContext context) { manager.SwitchState(new AirState(manager)); }
 
     public override void ExitState()
     {
         manager.inState = false;
         manager.rotatePlayerToCamera = true;
         manager.StartTimer("LedgeHangCooldown", ledgeHangCooldown);
-    }
 
+        manager.playerInputActions.LedgeHang.LedgeJump.performed -= DetectLedgeJumpInput;
+        manager.playerInputActions.LedgeHang.Disable();
+    }
 }

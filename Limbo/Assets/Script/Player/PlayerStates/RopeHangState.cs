@@ -3,28 +3,18 @@ using UnityEngine;
 using Dreamteck.Splines;
 public class RopeHangState : PlayerStateBase
 {
-    [Header("Parameters")]
-    Vector3 ropePoint;
-    Vector3 ropeNormal;
-    public float horizontalOffset = 0.3f;
-    public float verticalOffset = 0.6f;
     public float RopeHangCooldown = 0.5f;
-    public float radius = 1f;
-    Vector3 sphereCastOrigin;
-
-    RaycastHit hit;
     
     public RopeHangState(PlayerStateManager manager) : base(manager){ }
     public override void EnterState()
     {
+        manager.playerInputActions.RopeHang.Enable();
+
         manager.inState = true;
         manager.rotatePlayerToCamera = false;
 
-        manager.splineFollower.direction = GetLandingDirection(manager.ropeGrabPoint.transform.position, manager.ropeGrabPoint.transform.forward, manager.splineFollower);
-        manager.configJoint.connectedBody = manager.ropeGrabPoint.transform.GetComponent<Rigidbody>();
-        
-        manager.transform.position = manager.ropeGrabPoint.transform.position;
-
+        manager.splineFollower.direction = GetLandingDirection(manager.splineFollower.transform.position, manager.splineFollower.transform.forward, manager.splineFollower);
+    
         // reset velocity
         manager.rb.linearVelocity = Vector3.zero;
         manager.rb.angularVelocity = Vector3.zero;
@@ -32,12 +22,33 @@ public class RopeHangState : PlayerStateBase
     public override void UpdateState()
     {
         manager.Look();
-        manager.CustomGravity();
-        //manager.ResetPlayerVelocity();
+        AlignPlayerToRope();
+        RopeMovement();
     }
-    public override void FixedUpdateState()
+    public override void FixedUpdateState() {}
+
+    private void RopeMovement()
     {
         
+    }
+
+    private void AlignPlayerToRope()
+    {
+        // Evaluate spline at a given percent
+        SplineSample sample = manager.splineFollower.Evaluate(manager.splineFollower.result.percent);
+        // Desired up direction is spline's forward (tangent)
+        Vector3 desiredUp = sample.forward;
+
+        // To get a forward vector perpendicular to desiredUp, project current forward onto plane perpendicular to desiredUp
+        Vector3 projectedForward = Vector3.ProjectOnPlane(manager.transform.forward, desiredUp);
+
+        if (projectedForward.sqrMagnitude < 0.001f)
+        {
+            // If projected forward is almost zero vector (looking directly up/down), fallback to a default forward
+            projectedForward = Vector3.Cross(desiredUp, Vector3.right);
+        }
+
+        manager.transform.rotation = Quaternion.LookRotation(projectedForward.normalized, -desiredUp);
     }
 
     Spline.Direction GetLandingDirection(Vector3 position, Vector3 forward, SplineFollower follower) 
@@ -53,5 +64,7 @@ public class RopeHangState : PlayerStateBase
     {
         manager.ropeDetected = false;
         manager.StartTimer("LedgeHangCooldown", RopeHangCooldown);
+
+        manager.playerInputActions.RopeHang.Disable();
     }
 }

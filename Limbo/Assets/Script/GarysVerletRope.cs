@@ -4,7 +4,7 @@ using Dreamteck.Splines;
 //Credit and Scource: https://github.com/GaryMcWhorter/Verlet-Chain-Unity
 
 [RequireComponent(typeof(LineRenderer))]
-public class Rope : MonoBehaviour
+public class GarysVerletRope : MonoBehaviour
 {
     [Header("Instanced Mesh Details")]
     [SerializeField, Tooltip("The Mesh of chain link to render")] Mesh link;

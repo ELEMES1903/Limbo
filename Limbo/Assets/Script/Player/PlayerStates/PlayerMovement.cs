@@ -1,24 +1,33 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Dreamteck.Splines;
+using UnityEngine.InputSystem;
+using Unity.VisualScripting;
 
 //[RequireComponent(typeof(CharacterController))]
 public class PlayerStateManager : MonoBehaviour
 {
     [HideInInspector] public Rigidbody rb;
 
+    public bool isSame;
+    
+    [Header("InputAction")]
+    [HideInInspector] public PlayerInputActions playerInputActions;
+    [HideInInspector] public InputActionMap currentActionMap;
+
     [Header("Movement Settings")]
     public float maxSpeed = 6f;
     public float acceleration = 10f;
     public float deceleration = 15f;
-    [HideInInspector] public Vector3 inputDirection = Vector3.zero;
+    private Vector3 inputDirection = Vector3.zero;
+    private Vector2 moveInput;
 
     [Header("Look Settings")]
     public float mouseSensitivity = 100f;
     public Transform cameraHolder;
-    public float pitch = 0f;
-    public float yaw = 0f;
-    public float initialYaw;
+    private float pitch = 0f;
+    private float yaw = 0f;
+    [HideInInspector] public float initialYaw;
     public bool rotatePlayerToCamera;
     public float previousPlayerYaw;
 
@@ -26,12 +35,13 @@ public class PlayerStateManager : MonoBehaviour
     public Vector3 gravityDirection = Vector3.down;
     public float jumpForce = 7f;
     public float gravityStrength;
-    public bool inState;
-    public bool isGrounded;
+    private bool jumpInputDetected;
+    private bool isGrounded;
 
     [Header("State")]
     public string currentStateName;
     private PlayerStateBase currentState;
+    public bool inState;
 
     [Header("Ledge Detection")]
     public float ledgeCheckHeight = 0.5f;
@@ -43,59 +53,60 @@ public class PlayerStateManager : MonoBehaviour
     public SplineFollower splineFollower;
     public SplineComputer splineComputer;
     public bool ropeDetected;
-    public GameObject ropeGrabPoint;
-    public ConfigurableJoint configJoint;
 
     [Header("Debug")]
     public float timesToResetVelocity = 10f;
     private Dictionary<string, float> timers = new Dictionary<string, float>();
 
-    void Start()
+    void Awake()
     {
         rb = GetComponent<Rigidbody>();
+
+        splineFollower = transform.GetComponent<SplineFollower>();
+
+        playerInputActions = new PlayerInputActions();
+        
+        playerInputActions.OnGround.Jump.performed += DetectJumpInput;
+    }
+    void Start()
+    {
         Cursor.lockState = CursorLockMode.Locked;
         SwitchState(new IdleState(this));
-        rb.useGravity = false; // Disable Unity's built-in gravity
-
-        configJoint = GetComponent<ConfigurableJoint>();
-        ropeGrabPoint = GameObject.Find("RopeGrabPoint");
-        splineFollower = ropeGrabPoint.transform.GetComponent<SplineFollower>();
+        rb.useGravity = false;
     }
 
     void Update()
     {
         isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
+
         HandleTransitions();
+        
         currentState.UpdateState();
         currentStateName = currentState.GetType().Name;
+
         UpdateTimers(Time.deltaTime);
     }
 
     void FixedUpdate()
     {
         currentState.FixedUpdateState();
+        Jump();
     }
 
-    public void CustomGravity()
-    {
-        Vector3 customGravity = gravityDirection.normalized * gravityStrength;
-        rb.AddForce(customGravity, ForceMode.Acceleration);
-    }
     public void SwitchState(PlayerStateBase newState)
     {
+        if (currentState is WalkingState || currentState is IdleState && newState is WalkingState || newState is IdleState){}
+        else if (currentState is WalkingState || currentState is IdleState) { playerInputActions.OnGround.Disable(); }
+        else if (newState is WalkingState || newState is IdleState) { playerInputActions.OnGround.Enable(); }
+
         currentState?.ExitState();
         currentState = newState;
         currentState.EnterState();
+
+        //buffer to reset velocity when entering states
         timesToResetVelocity = 10;
     }
-    private void Jump()
-    {
-        // Remove existing velocity in gravity direction to get a consistent jump
-        rb.linearVelocity -= Vector3.Project(rb.linearVelocity, -gravityDirection);
 
-        // Apply jump force opposite to gravity
-        rb.AddForce(-gravityDirection.normalized * jumpForce, ForceMode.VelocityChange);
-    }
     void HandleTransitions()
     {
         if (!(currentState is LedgeHangState) && IsTimerDone("LedgeHangCooldown") && CheckLedgeDetection(out Vector3 ledgePoint, out Vector3 wallNormal))
@@ -110,8 +121,7 @@ public class PlayerStateManager : MonoBehaviour
             return;
         }
 
-        if (inState)
-            return;
+        if (inState){return;}
 
         if (!isGrounded && !(currentState is AirState))
         {
@@ -119,18 +129,37 @@ public class PlayerStateManager : MonoBehaviour
             return;
         }
 
-        if (!isGrounded)
-            return;
+        if (!isGrounded){return;}
 
         if (inputDirection.magnitude <= 0.1f)
         {
-            if (!(currentState is IdleState))
-                SwitchState(new IdleState(this));
+            if (!(currentState is IdleState)) {SwitchState(new IdleState(this));}
         }
         else
         {
-            if (!(currentState is WalkingState))
-                SwitchState(new WalkingState(this));
+            if (!(currentState is WalkingState)) {SwitchState(new WalkingState(this));}
+        }
+    }
+    
+    public void CustomGravity()
+    {
+        Vector3 customGravity = gravityDirection.normalized * gravityStrength;
+        rb.AddForce(customGravity, ForceMode.Acceleration);
+    }
+
+    public void DetectJumpInput(InputAction.CallbackContext context) { jumpInputDetected = true; }
+
+    public void Jump()
+    {
+        if (jumpInputDetected && isGrounded)
+        {
+            // Remove existing velocity in gravity direction to get a consistent jump
+            rb.linearVelocity -= Vector3.Project(rb.linearVelocity, -gravityDirection);
+
+            // Apply jump force opposite to gravity
+            rb.AddForce(-gravityDirection.normalized * jumpForce, ForceMode.VelocityChange);
+
+            jumpInputDetected = false;               
         }
     }
 
@@ -176,9 +205,8 @@ public class PlayerStateManager : MonoBehaviour
 
     public void HandleMovementInput()
     {
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-        Vector3 input = new Vector3(h, 0, v).normalized;
+        moveInput = playerInputActions.OnGround.Move.ReadValue<Vector2>();
+        Vector3 input = new Vector3(moveInput.x, 0, moveInput.y).normalized;
 
         Vector3 camForward = cameraHolder.forward;
         Vector3 camRight = cameraHolder.right;
@@ -193,7 +221,7 @@ public class PlayerStateManager : MonoBehaviour
         inputDirection = moveDirection;
     }
 
-    public void MovePlayer()
+    public void Move()
     {
         Vector3 flatVelocity = rb.linearVelocity;
         flatVelocity.y = 0f;
@@ -204,11 +232,6 @@ public class PlayerStateManager : MonoBehaviour
         move.y = rb.linearVelocity.y;
 
         rb.linearVelocity = move;
-
-        if (isGrounded && Input.GetButtonDown("Jump"))
-        {
-            Jump();
-        }
     }
 
     public bool CheckLedgeDetection(out Vector3 ledgePoint, out Vector3 wallNormal)
