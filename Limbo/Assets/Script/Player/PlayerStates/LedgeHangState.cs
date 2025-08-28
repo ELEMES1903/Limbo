@@ -14,7 +14,7 @@ public class LedgeHangState : PlayerStateBase
     private float verticalOffset = -1.0f;
     private float hangMoveSpeed = 4f;
     private float rotationSpeed = 5f;
-    private float moveInput;
+    private float shimmyInputValue;
 
     [Header("Ledge Camera")]
     public float maxYaw = 90f;
@@ -58,7 +58,7 @@ public class LedgeHangState : PlayerStateBase
 
     public override void UpdateState()
     {
-        moveInput = manager.playerInputActions.LedgeHang.MoveAlongLedge.ReadValue<float>();
+        shimmyInputValue = manager.playerInputActions.LedgeHang.Shimmy.ReadValue<float>();
 
         manager.Look();
         manager.ResetPlayerVelocity();
@@ -128,11 +128,11 @@ public class LedgeHangState : PlayerStateBase
         if (!gotWall) return;
 
         wallNormal = wallHit.normal;
-
-        if (Mathf.Abs(moveInput) > 0.1f)
+        Debug.Log(shimmyInputValue);
+        if (Mathf.Abs(shimmyInputValue) > 0.1f)
         {
             Vector3 wallRight = Vector3.Cross(Vector3.up, wallNormal);
-            Vector3 moveDir = -wallRight * moveInput;
+            Vector3 moveDir = -wallRight * shimmyInputValue;
 
             // ✅ Move with Rigidbody
             Vector3 targetPosition = manager.rb.position + moveDir * hangMoveSpeed * Time.deltaTime;
@@ -170,6 +170,7 @@ public class LedgeHangState : PlayerStateBase
         manager.StartTimer("LedgeHangCooldown", ledgeHangCooldown);
 
         manager.playerInputActions.LedgeHang.LedgeJump.performed -= DetectLedgeJumpInput;
+        manager.playerInputActions.LedgeHang.LedgeDrop.performed -= LedgeDrop;
         manager.playerInputActions.LedgeHang.Disable();
     }
 }

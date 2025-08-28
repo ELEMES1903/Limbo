@@ -6,6 +6,7 @@ public class WalkingState : PlayerStateBase
     public override void EnterState()
     {
         manager.playerInputActions.OnGround.Enable();
+        manager.playerInputActions.OnGround.Jump.performed += manager.DetectJumpInput;
     }
 
     public override void UpdateState()
@@ -18,7 +19,9 @@ public class WalkingState : PlayerStateBase
         manager.Move(); 
     }
     public override void ExitState()
-    { 
+    {
+        manager.playerInputActions.OnGround.Jump.performed -= manager.DetectJumpInput; 
+        //manager.jumpInputDetected = false; 
     }
 }
 

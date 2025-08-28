@@ -1,14 +1,25 @@
 using Unity.VisualScripting;
 using UnityEngine;
 using Dreamteck.Splines;
+using UnityEngine.InputSystem;
+
 public class RopeHangState : PlayerStateBase
 {
-    public float RopeHangCooldown = 0.5f;
+    public float RopeHangCooldown = 1f;
+
+    [Header("Climb")]
+
+    public float climbSpeed = 1;
+    private float climbInputValue;
+    [Header("Climb Limit Check")]
     
-    public RopeHangState(PlayerStateManager manager) : base(manager){ }
+    private float climbCheckDistance = .5f;
+    
+    public RopeHangState(PlayerStateManager manager) : base(manager) { }
     public override void EnterState()
     {
         manager.playerInputActions.RopeHang.Enable();
+        manager.playerInputActions.RopeHang.RopeDrop.performed += RopeDrop;
 
         manager.inState = true;
         manager.rotatePlayerToCamera = false;
@@ -21,16 +32,66 @@ public class RopeHangState : PlayerStateBase
     }
     public override void UpdateState()
     {
+        climbInputValue = manager.playerInputActions.RopeHang.Climb.ReadValue<float>();
+
         manager.Look();
         AlignPlayerToRope();
-        RopeMovement();
+        Climb();
     }
     public override void FixedUpdateState() {}
 
-    private void RopeMovement()
+    private void Climb()
     {
-        
+        Debug.Log(climbInputValue);
+        if (Mathf.Abs(climbInputValue) > 0.1f)
+        {
+            manager.splineFollower.follow = true;
+
+            if (climbInputValue == 1)
+            {
+                if (!FloorCheck())
+                { manager.splineFollower.followSpeed = climbSpeed; }
+                else
+                { manager.splineFollower.followSpeed = 0; }
+            }
+            else if (climbInputValue == -1)
+            {
+                if (!CeilingCheck())
+                { manager.splineFollower.followSpeed = -climbSpeed; }
+                else
+                { manager.splineFollower.followSpeed = 0; }
+            }
+        }
+        else
+        {
+            //no input detected = dont move
+            manager.splineFollower.follow = false;
+        }
     }
+
+    private bool CeilingCheck()
+    {
+        RaycastHit ceilingHit;
+        if (Physics.Raycast(manager.ceilingCheck.position, manager.transform.up, out ceilingHit, climbCheckDistance, manager.ceilingLayer))
+        {
+            return true;
+        }
+        Debug.DrawRay(manager.ceilingCheck.position, manager.transform.up * climbCheckDistance, Color.red, 0.1f);
+        return false;
+    }
+
+    private bool FloorCheck()
+    {
+        RaycastHit floorHit;
+        if (Physics.Raycast(manager.groundCheck.position, -manager.transform.up, out floorHit, climbCheckDistance, manager.floorLayer))
+        {
+            return true;
+        }
+        Debug.DrawRay(manager.groundCheck.position, -manager.transform.up * climbCheckDistance, Color.blue, 0.1f);
+        return false;
+    }
+
+    private void RopeDrop(InputAction.CallbackContext context) { manager.SwitchState(new AirState(manager)); }
 
     private void AlignPlayerToRope()
     {
@@ -54,16 +115,24 @@ public class RopeHangState : PlayerStateBase
     Spline.Direction GetLandingDirection(Vector3 position, Vector3 forward, SplineFollower follower) 
     {
         SplineSample result = new();
-        follower.Project(position, ref result);
+        follower.Project(manager.ropeContactPoint, ref result);
+        
+        // Clamp to avoid snapping to absolute ends
+        float clampedPercent = Mathf.Clamp01((float)result.percent);
+        clampedPercent = Mathf.Clamp(clampedPercent, 0.01f, 0.99f);
+
+        manager.splineFollower.SetPercent(clampedPercent);
+
         float dot = Vector3.Dot(result.forward, forward);
-        manager.splineFollower.SetPercent(result.percent);
         return (Spline.Direction)Mathf.Sign(dot);
     }
 
     public override void ExitState()
     {
         manager.ropeDetected = false;
-        manager.StartTimer("LedgeHangCooldown", RopeHangCooldown);
+        manager.rope.playerDetected = false;
+        manager.inState = false;
+        manager.StartTimer("RopeHangCooldown", RopeHangCooldown);
 
         manager.playerInputActions.RopeHang.Disable();
     }

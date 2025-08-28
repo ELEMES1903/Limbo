@@ -200,7 +200,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             ""id"": ""ae821d4f-a816-45a0-91d0-852d58d82816"",
             ""actions"": [
                 {
-                    ""name"": ""MoveAlongLedge"",
+                    ""name"": ""Shimmy"",
                     ""type"": ""Value"",
                     ""id"": ""dda92012-d416-4ca0-8ce0-cc2fa97f299f"",
                     ""expectedControlType"": ""Axis"",
@@ -229,13 +229,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             ],
             ""bindings"": [
                 {
-                    ""name"": ""Shimmy Right+/Left-"",
+                    ""name"": ""Right+/Left-"",
                     ""id"": ""166caa17-c3c5-4797-a672-bd7eaf44d560"",
                     ""path"": ""1DAxis"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""MoveAlongLedge"",
+                    ""action"": ""Shimmy"",
                     ""isComposite"": true,
                     ""isPartOfComposite"": false
                 },
@@ -246,7 +246,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""MoveAlongLedge"",
+                    ""action"": ""Shimmy"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
                 },
@@ -257,7 +257,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""MoveAlongLedge"",
+                    ""action"": ""Shimmy"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
                 },
@@ -290,48 +290,68 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             ""id"": ""d6fc2e37-2c4e-4628-b06f-3bb7dc18243c"",
             ""actions"": [
                 {
-                    ""name"": ""MoveAlongRope"",
+                    ""name"": ""Climb"",
                     ""type"": ""Value"",
                     ""id"": ""e660a32e-0a90-4e64-960f-98862cbb2a12"",
                     ""expectedControlType"": ""Axis"",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""RopeDrop"",
+                    ""type"": ""Button"",
+                    ""id"": ""22a3e63e-cc20-471b-88e0-ca1d9b8dc302"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": ""Hold(duration=0.6)"",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
                 {
-                    ""name"": ""Climb Up+/Down-"",
+                    ""name"": ""Up-/Down+"",
                     ""id"": ""647a4c7d-c796-4df0-ba8c-f8ad4cbc4ac0"",
                     ""path"": ""1DAxis"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""MoveAlongRope"",
+                    ""action"": ""Climb"",
                     ""isComposite"": true,
                     ""isPartOfComposite"": false
                 },
                 {
-                    ""name"": ""negative"",
+                    ""name"": ""Positive"",
                     ""id"": ""f93e6e19-4179-40ee-bcf0-216cdb2bc35f"",
                     ""path"": ""<Keyboard>/s"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""MoveAlongRope"",
+                    ""action"": ""Climb"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
                 },
                 {
-                    ""name"": ""positive"",
+                    ""name"": ""Negative"",
                     ""id"": ""5eea04e5-d264-494b-be9b-20361740b98c"",
                     ""path"": ""<Keyboard>/w"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""MoveAlongRope"",
+                    ""action"": ""Climb"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""bd4f8804-b4b1-4b44-897c-96b8fd85ab05"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RopeDrop"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -347,12 +367,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_InAir_Newaction = m_InAir.FindAction("New action", throwIfNotFound: true);
         // LedgeHang
         m_LedgeHang = asset.FindActionMap("LedgeHang", throwIfNotFound: true);
-        m_LedgeHang_MoveAlongLedge = m_LedgeHang.FindAction("MoveAlongLedge", throwIfNotFound: true);
+        m_LedgeHang_Shimmy = m_LedgeHang.FindAction("Shimmy", throwIfNotFound: true);
         m_LedgeHang_LedgeJump = m_LedgeHang.FindAction("LedgeJump", throwIfNotFound: true);
         m_LedgeHang_LedgeDrop = m_LedgeHang.FindAction("LedgeDrop", throwIfNotFound: true);
         // RopeHang
         m_RopeHang = asset.FindActionMap("RopeHang", throwIfNotFound: true);
-        m_RopeHang_MoveAlongRope = m_RopeHang.FindAction("MoveAlongRope", throwIfNotFound: true);
+        m_RopeHang_Climb = m_RopeHang.FindAction("Climb", throwIfNotFound: true);
+        m_RopeHang_RopeDrop = m_RopeHang.FindAction("RopeDrop", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -639,7 +660,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     // LedgeHang
     private readonly InputActionMap m_LedgeHang;
     private List<ILedgeHangActions> m_LedgeHangActionsCallbackInterfaces = new List<ILedgeHangActions>();
-    private readonly InputAction m_LedgeHang_MoveAlongLedge;
+    private readonly InputAction m_LedgeHang_Shimmy;
     private readonly InputAction m_LedgeHang_LedgeJump;
     private readonly InputAction m_LedgeHang_LedgeDrop;
     /// <summary>
@@ -654,9 +675,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// </summary>
         public LedgeHangActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
         /// <summary>
-        /// Provides access to the underlying input action "LedgeHang/MoveAlongLedge".
+        /// Provides access to the underlying input action "LedgeHang/Shimmy".
         /// </summary>
-        public InputAction @MoveAlongLedge => m_Wrapper.m_LedgeHang_MoveAlongLedge;
+        public InputAction @Shimmy => m_Wrapper.m_LedgeHang_Shimmy;
         /// <summary>
         /// Provides access to the underlying input action "LedgeHang/LedgeJump".
         /// </summary>
@@ -691,9 +712,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         {
             if (instance == null || m_Wrapper.m_LedgeHangActionsCallbackInterfaces.Contains(instance)) return;
             m_Wrapper.m_LedgeHangActionsCallbackInterfaces.Add(instance);
-            @MoveAlongLedge.started += instance.OnMoveAlongLedge;
-            @MoveAlongLedge.performed += instance.OnMoveAlongLedge;
-            @MoveAlongLedge.canceled += instance.OnMoveAlongLedge;
+            @Shimmy.started += instance.OnShimmy;
+            @Shimmy.performed += instance.OnShimmy;
+            @Shimmy.canceled += instance.OnShimmy;
             @LedgeJump.started += instance.OnLedgeJump;
             @LedgeJump.performed += instance.OnLedgeJump;
             @LedgeJump.canceled += instance.OnLedgeJump;
@@ -711,9 +732,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="LedgeHangActions" />
         private void UnregisterCallbacks(ILedgeHangActions instance)
         {
-            @MoveAlongLedge.started -= instance.OnMoveAlongLedge;
-            @MoveAlongLedge.performed -= instance.OnMoveAlongLedge;
-            @MoveAlongLedge.canceled -= instance.OnMoveAlongLedge;
+            @Shimmy.started -= instance.OnShimmy;
+            @Shimmy.performed -= instance.OnShimmy;
+            @Shimmy.canceled -= instance.OnShimmy;
             @LedgeJump.started -= instance.OnLedgeJump;
             @LedgeJump.performed -= instance.OnLedgeJump;
             @LedgeJump.canceled -= instance.OnLedgeJump;
@@ -757,7 +778,8 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     // RopeHang
     private readonly InputActionMap m_RopeHang;
     private List<IRopeHangActions> m_RopeHangActionsCallbackInterfaces = new List<IRopeHangActions>();
-    private readonly InputAction m_RopeHang_MoveAlongRope;
+    private readonly InputAction m_RopeHang_Climb;
+    private readonly InputAction m_RopeHang_RopeDrop;
     /// <summary>
     /// Provides access to input actions defined in input action map "RopeHang".
     /// </summary>
@@ -770,9 +792,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// </summary>
         public RopeHangActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
         /// <summary>
-        /// Provides access to the underlying input action "RopeHang/MoveAlongRope".
+        /// Provides access to the underlying input action "RopeHang/Climb".
         /// </summary>
-        public InputAction @MoveAlongRope => m_Wrapper.m_RopeHang_MoveAlongRope;
+        public InputAction @Climb => m_Wrapper.m_RopeHang_Climb;
+        /// <summary>
+        /// Provides access to the underlying input action "RopeHang/RopeDrop".
+        /// </summary>
+        public InputAction @RopeDrop => m_Wrapper.m_RopeHang_RopeDrop;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -799,9 +825,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         {
             if (instance == null || m_Wrapper.m_RopeHangActionsCallbackInterfaces.Contains(instance)) return;
             m_Wrapper.m_RopeHangActionsCallbackInterfaces.Add(instance);
-            @MoveAlongRope.started += instance.OnMoveAlongRope;
-            @MoveAlongRope.performed += instance.OnMoveAlongRope;
-            @MoveAlongRope.canceled += instance.OnMoveAlongRope;
+            @Climb.started += instance.OnClimb;
+            @Climb.performed += instance.OnClimb;
+            @Climb.canceled += instance.OnClimb;
+            @RopeDrop.started += instance.OnRopeDrop;
+            @RopeDrop.performed += instance.OnRopeDrop;
+            @RopeDrop.canceled += instance.OnRopeDrop;
         }
 
         /// <summary>
@@ -813,9 +842,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="RopeHangActions" />
         private void UnregisterCallbacks(IRopeHangActions instance)
         {
-            @MoveAlongRope.started -= instance.OnMoveAlongRope;
-            @MoveAlongRope.performed -= instance.OnMoveAlongRope;
-            @MoveAlongRope.canceled -= instance.OnMoveAlongRope;
+            @Climb.started -= instance.OnClimb;
+            @Climb.performed -= instance.OnClimb;
+            @Climb.canceled -= instance.OnClimb;
+            @RopeDrop.started -= instance.OnRopeDrop;
+            @RopeDrop.performed -= instance.OnRopeDrop;
+            @RopeDrop.canceled -= instance.OnRopeDrop;
         }
 
         /// <summary>
@@ -894,12 +926,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     public interface ILedgeHangActions
     {
         /// <summary>
-        /// Method invoked when associated input action "MoveAlongLedge" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "Shimmy" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnMoveAlongLedge(InputAction.CallbackContext context);
+        void OnShimmy(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "LedgeJump" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
@@ -923,11 +955,18 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     public interface IRopeHangActions
     {
         /// <summary>
-        /// Method invoked when associated input action "MoveAlongRope" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "Climb" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnMoveAlongRope(InputAction.CallbackContext context);
+        void OnClimb(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "RopeDrop" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRopeDrop(InputAction.CallbackContext context);
     }
 }

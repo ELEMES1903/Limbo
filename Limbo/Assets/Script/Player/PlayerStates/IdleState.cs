@@ -10,6 +10,7 @@ public class IdleState : PlayerStateBase
         manager.rotatePlayerToCamera = true;
 
         manager.playerInputActions.OnGround.Enable();
+        manager.playerInputActions.OnGround.Jump.performed += manager.DetectJumpInput;
         
     }
 
@@ -23,7 +24,8 @@ public class IdleState : PlayerStateBase
         manager.Move(); 
     }
     public override void ExitState()
-    { 
-        
+    {
+        manager.playerInputActions.OnGround.Jump.performed -= manager.DetectJumpInput; 
+        //manager.jumpInputDetected = false;
     }
 }

@@ -114,7 +114,7 @@
             "id": "ae821d4f-a816-45a0-91d0-852d58d82816",
             "actions": [
                 {
-                    "name": "MoveAlongLedge",
+                    "name": "Shimmy",
                     "type": "Value",
                     "id": "dda92012-d416-4ca0-8ce0-cc2fa97f299f",
                     "expectedControlType": "Axis",
@@ -143,13 +143,13 @@
             ],
             "bindings": [
                 {
-                    "name": "Shimmy Right+/Left-",
+                    "name": "Right+/Left-",
                     "id": "166caa17-c3c5-4797-a672-bd7eaf44d560",
                     "path": "1DAxis",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "MoveAlongLedge",
+                    "action": "Shimmy",
                     "isComposite": true,
                     "isPartOfComposite": false
                 },
@@ -160,7 +160,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "MoveAlongLedge",
+                    "action": "Shimmy",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -171,7 +171,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "MoveAlongLedge",
+                    "action": "Shimmy",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
@@ -204,48 +204,68 @@
             "id": "d6fc2e37-2c4e-4628-b06f-3bb7dc18243c",
             "actions": [
                 {
-                    "name": "MoveAlongRope",
+                    "name": "Climb",
                     "type": "Value",
                     "id": "e660a32e-0a90-4e64-960f-98862cbb2a12",
                     "expectedControlType": "Axis",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "RopeDrop",
+                    "type": "Button",
+                    "id": "22a3e63e-cc20-471b-88e0-ca1d9b8dc302",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "Hold(duration=0.6)",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
                 {
-                    "name": "Climb Up+/Down-",
+                    "name": "Up-/Down+",
                     "id": "647a4c7d-c796-4df0-ba8c-f8ad4cbc4ac0",
                     "path": "1DAxis",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "MoveAlongRope",
+                    "action": "Climb",
                     "isComposite": true,
                     "isPartOfComposite": false
                 },
                 {
-                    "name": "negative",
+                    "name": "Positive",
                     "id": "f93e6e19-4179-40ee-bcf0-216cdb2bc35f",
                     "path": "<Keyboard>/s",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "MoveAlongRope",
+                    "action": "Climb",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
                 {
-                    "name": "positive",
+                    "name": "Negative",
                     "id": "5eea04e5-d264-494b-be9b-20361740b98c",
                     "path": "<Keyboard>/w",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "MoveAlongRope",
+                    "action": "Climb",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "bd4f8804-b4b1-4b44-897c-96b8fd85ab05",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RopeDrop",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }

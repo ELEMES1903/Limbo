@@ -2,14 +2,10 @@ using UnityEngine;
 using System.Collections.Generic;
 using Dreamteck.Splines;
 using UnityEngine.InputSystem;
-using Unity.VisualScripting;
 
-//[RequireComponent(typeof(CharacterController))]
 public class PlayerStateManager : MonoBehaviour
 {
     [HideInInspector] public Rigidbody rb;
-
-    public bool isSame;
     
     [Header("InputAction")]
     [HideInInspector] public PlayerInputActions playerInputActions;
@@ -20,7 +16,7 @@ public class PlayerStateManager : MonoBehaviour
     public float acceleration = 10f;
     public float deceleration = 15f;
     private Vector3 inputDirection = Vector3.zero;
-    private Vector2 moveInput;
+    private Vector2 moveInputValue;
 
     [Header("Look Settings")]
     public float mouseSensitivity = 100f;
@@ -35,7 +31,7 @@ public class PlayerStateManager : MonoBehaviour
     public Vector3 gravityDirection = Vector3.down;
     public float jumpForce = 7f;
     public float gravityStrength;
-    private bool jumpInputDetected;
+    [HideInInspector] public bool jumpInputDetected;
     private bool isGrounded;
 
     [Header("State")]
@@ -46,18 +42,30 @@ public class PlayerStateManager : MonoBehaviour
     [Header("Ledge Detection")]
     public float ledgeCheckHeight = 0.5f;
     public float ledgeRayDistance = 1f;
-    public LayerMask wallLayer;
     public Transform ledgeRaycastOrigin;
 
     [Header("Rope")]
     public SplineFollower splineFollower;
     public SplineComputer splineComputer;
+    [HideInInspector] public Vector3 ropeContactPoint;
     public bool ropeDetected;
+
+    [HideInInspector] public GarysVerletRope rope;
 
     [Header("Debug")]
     public float timesToResetVelocity = 10f;
     private Dictionary<string, float> timers = new Dictionary<string, float>();
 
+    [Header("Layers")]
+    public LayerMask ceilingLayer;
+    public LayerMask floorLayer;
+    public LayerMask wallLayer;
+
+    [Header("Check Transforms")]
+
+    public Transform groundCheck;
+    public Transform ceilingCheck;
+    
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -65,8 +73,10 @@ public class PlayerStateManager : MonoBehaviour
         splineFollower = transform.GetComponent<SplineFollower>();
 
         playerInputActions = new PlayerInputActions();
+
+        //playerInputActions.OnGround.Jump.performed += DetectJumpInput;
         
-        playerInputActions.OnGround.Jump.performed += DetectJumpInput;
+        currentActionMap = playerInputActions.OnGround;
     }
     void Start()
     {
@@ -95,7 +105,8 @@ public class PlayerStateManager : MonoBehaviour
 
     public void SwitchState(PlayerStateBase newState)
     {
-        if (currentState is WalkingState || currentState is IdleState && newState is WalkingState || newState is IdleState){}
+        //quick fix logic for walk and idle state both enable/disable
+        if (currentState is WalkingState || currentState is IdleState && newState is WalkingState || newState is IdleState) { }
         else if (currentState is WalkingState || currentState is IdleState) { playerInputActions.OnGround.Disable(); }
         else if (newState is WalkingState || newState is IdleState) { playerInputActions.OnGround.Enable(); }
 
@@ -158,9 +169,8 @@ public class PlayerStateManager : MonoBehaviour
 
             // Apply jump force opposite to gravity
             rb.AddForce(-gravityDirection.normalized * jumpForce, ForceMode.VelocityChange);
-
-            jumpInputDetected = false;               
         }
+        jumpInputDetected = false; 
     }
 
     public void Look()
@@ -205,8 +215,8 @@ public class PlayerStateManager : MonoBehaviour
 
     public void HandleMovementInput()
     {
-        moveInput = playerInputActions.OnGround.Move.ReadValue<Vector2>();
-        Vector3 input = new Vector3(moveInput.x, 0, moveInput.y).normalized;
+        moveInputValue = playerInputActions.OnGround.Move.ReadValue<Vector2>();
+        Vector3 input = new Vector3(moveInputValue.x, 0, moveInputValue.y).normalized;
 
         Vector3 camForward = cameraHolder.forward;
         Vector3 camRight = cameraHolder.right;

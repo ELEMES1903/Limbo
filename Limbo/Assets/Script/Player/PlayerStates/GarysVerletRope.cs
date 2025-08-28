@@ -65,7 +65,7 @@ public class GarysVerletRope : MonoBehaviour
     public bool showPlayerCollisionRadius = true;
     public Color playerCollisionColor = Color.red;
     public float playerCollisionRadius = 0.5f;
-    private bool playerDetected = false;
+    public bool playerDetected = false;
 
     [SerializeField, Tooltip("Layers the rope should ignore during collision")] 
     LayerMask ignoreCollisionLayers;
@@ -310,14 +310,20 @@ public class GarysVerletRope : MonoBehaviour
         Vector3 playerPos = player.transform.position;
         float sqrRadius = playerCollisionRadius * playerCollisionRadius;
 
+        PlayerStateManager playerMovement = player.transform.GetComponent<PlayerStateManager>();
+        
         for (int i = 0; i < totalNodes; i++)
         {
-            if ((currentNodePositions[i] - playerPos).sqrMagnitude < sqrRadius && !playerDetected)
+            if ((currentNodePositions[i] - playerPos).sqrMagnitude < sqrRadius && !playerDetected && playerMovement.IsTimerDone("RopeHangCooldown"))
             {
-                PlayerStateManager playerMovement = player.transform.GetComponent<PlayerStateManager>();
+                
                 playerMovement.splineFollower.spline = splineComputer;
 
                 playerMovement.splineComputer = splineComputer;
+
+                playerMovement.ropeContactPoint = currentNodePositions[i];
+
+                playerMovement.rope = this;
 
                 playerMovement.ropeDetected = true;
                 playerDetected = true;
