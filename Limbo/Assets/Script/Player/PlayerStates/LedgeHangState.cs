@@ -44,7 +44,7 @@ public class LedgeHangState : PlayerStateBase
         manager.rotatePlayerToCamera = false;
         manager.previousPlayerYaw = manager.transform.eulerAngles.y;
 
-        CalibrateCamera();
+        manager.CalibrateCamera();
 
         //Reposition to ledge anf face towards wall
         manager.transform.forward = -wallNormal;
@@ -69,18 +69,7 @@ public class LedgeHangState : PlayerStateBase
         LedgeMovement();
         LedgeJump();
     }
-
-    private void CalibrateCamera()
-    {
-        // Get the yaw (horizontal angle) of the player and camera
-        float playerYaw = manager.transform.eulerAngles.y;
-        float cameraYaw = manager.cameraHolder.eulerAngles.y;
-
-        // Calculate the shortest signed angle between the player and camera yaw
-        // This handles wraparound (e.g., 359° vs 1° becomes +2°, not -358°)
-        // This value is stored to define the "initial" camera offset when entering ledgehang
-        manager.initialYaw = Mathf.DeltaAngle(playerYaw, cameraYaw);
-    }
+    
     public void LedgeMovement()
     {
         // Raycasting to find wall for alignment and movement direction

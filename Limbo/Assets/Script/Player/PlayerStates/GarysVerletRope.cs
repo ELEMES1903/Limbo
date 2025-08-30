@@ -52,7 +52,7 @@ public class GarysVerletRope : MonoBehaviour
 
     Vector3[] previousNodePositions;
 
-    Vector3[] currentNodePositions;
+    public Vector3[] currentNodePositions;
     Quaternion[] currentNodeRotations;
 
     SphereCollider nodeCollider;
@@ -62,10 +62,15 @@ public class GarysVerletRope : MonoBehaviour
     [Header("Player Detection")]
     private SplineComputer splineComputer;
     private GameObject player;
+    private Rigidbody playerRb;
     public bool showPlayerCollisionRadius = true;
     public Color playerCollisionColor = Color.red;
     public float playerCollisionRadius = 0.5f;
     public bool playerDetected = false;
+
+    [Header("Node Positions")]
+    Vector3 currentNodePos;
+    Vector3 prevNodePos;
 
     [SerializeField, Tooltip("Layers the rope should ignore during collision")] 
     LayerMask ignoreCollisionLayers;
@@ -75,6 +80,7 @@ public class GarysVerletRope : MonoBehaviour
     {
         splineComputer = GetComponent<SplineComputer>();
         player = GameObject.FindWithTag("Player");
+        playerRb = player.GetComponent<Rigidbody>();
 
         currentNodePositions = new Vector3[totalNodes];
         previousNodePositions = new Vector3[totalNodes];
@@ -316,7 +322,6 @@ public class GarysVerletRope : MonoBehaviour
         {
             if ((currentNodePositions[i] - playerPos).sqrMagnitude < sqrRadius && !playerDetected && playerMovement.IsTimerDone("RopeHangCooldown"))
             {
-                
                 playerMovement.splineFollower.spline = splineComputer;
 
                 playerMovement.splineComputer = splineComputer;
@@ -334,6 +339,66 @@ public class GarysVerletRope : MonoBehaviour
             }
         }
     }
+    public int GetNearestNodeIndex(Vector3 playerPos)
+    {
+        int nearestIndex = 0;
+        float nearestDistSqr = Mathf.Infinity;
+
+        for (int i = 0; i < totalNodes; i++)
+        {
+            float distSqr = (currentNodePositions[i] - playerPos).sqrMagnitude;
+            if (distSqr < nearestDistSqr)
+            {
+                nearestDistSqr = distSqr;
+                nearestIndex = i;
+            }
+        }
+
+        return nearestIndex;
+    }
+
+    public void ApplyPlayerInputToRope(
+        Transform playerTransform,
+        Vector2 ropeInput,
+        float forceStrength,
+        out Vector3 currentNodePos,
+        out Vector3 prevNodePos)
+    {
+        Vector3 playerPos = playerTransform.position;
+        int nearestNodeIndex = GetNearestNodeIndex(playerPos);
+
+        // Map input to player's local forward/right instead of world axes
+        Vector3 inputDirection = (playerTransform.right * ropeInput.x) + (playerTransform.forward * ropeInput.y);
+
+        // Keep movement horizontal (remove vertical influence)
+        inputDirection.y = 0;
+
+        if (inputDirection.sqrMagnitude > 0.001f)
+        {
+            inputDirection.Normalize();
+            Vector3 impulse = inputDirection * forceStrength * Time.fixedDeltaTime;
+
+            // Apply to nearest node
+            previousNodePositions[nearestNodeIndex] -= impulse;
+
+            // Spread some influence to neighbors for smoother swaying
+            if (nearestNodeIndex > 0)
+                previousNodePositions[nearestNodeIndex - 1] -= impulse * 0.5f;
+            if (nearestNodeIndex > 1)
+                previousNodePositions[nearestNodeIndex - 2] -= impulse * 0.25f;
+            if (nearestNodeIndex < totalNodes - 1)
+                previousNodePositions[nearestNodeIndex + 1] -= impulse * 0.5f;
+            if (nearestNodeIndex < totalNodes - 2)
+                previousNodePositions[nearestNodeIndex + 2] -= impulse * 0.25f;
+        }
+
+        // --- Calculate velocity and direction of nearest node ---
+        currentNodePos = currentNodePositions[nearestNodeIndex];
+        prevNodePos = previousNodePositions[nearestNodeIndex];
+    }
+
+
+
 
     private void OnDrawGizmos()
     {

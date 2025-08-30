@@ -2350,6 +2350,7 @@ MonoBehaviour:
   ledgeCheckHeight: 0.5
   ledgeRayDistance: 0.75
   ledgeRaycastOrigin: {fileID: 2065088558}
+  ropeJumpForce: 3
   splineFollower: {fileID: 0}
   splineComputer: {fileID: 0}
   ropeContactPoint: {x: 0, y: 0, z: 0}
@@ -2365,6 +2366,8 @@ MonoBehaviour:
   wallLayer:
     serializedVersion: 2
     m_Bits: 64
+  groundCheck: {fileID: 1198454453}
+  ceilingCheck: {fileID: 66141191}
 --- !u!136 &883624256
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2594,13 +2597,13 @@ MonoBehaviour:
     color: {r: 0, g: 0, b: 0, a: 0}
     size: 0
     percent: 0
-  wrapMode: 0
+  wrapMode: 1
   followMode: 0
   autoStartPosition: 0
   _follow: 1
   _startPosition: 0
   preserveUniformSpeedWithOffset: 0
-  _followSpeed: 1
+  _followSpeed: 0
   _followDuration: 1
   _speedModifier:
     blend: 1
@@ -2640,7 +2643,7 @@ Transform:
   m_GameObject: {fileID: 965447853}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.06, y: 10.1, z: -14.87}
+  m_LocalPosition: {x: 8.06, y: 10.56, z: -14.87}
   m_LocalScale: {x: 5, y: 1, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2939,7 +2942,7 @@ Transform:
   m_GameObject: {fileID: 1129944094}
   serializedVersion: 2
   m_LocalRotation: {x: 0.0067513892, y: 0.97567266, z: -0.21701623, w: 0.030353427}
-  m_LocalPosition: {x: 7.16, y: 5.45, z: -19.17}
+  m_LocalPosition: {x: 7.16, y: 5.45, z: -21.29}
   m_LocalScale: {x: 0.4, y: 1, z: 0.6}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3844,14 +3847,15 @@ MonoBehaviour:
   endPoint: {fileID: 0}
   nodeDistance: 0.2
   nodeColliderRadius: 0.2
-  gravityStrength: 2
+  gravityStrength: 0.5
   totalNodes: 20
-  velocityDampen: 0.95
+  velocityDampen: 0.995
   stiffness: 0.8
   iterateCollisionsEvery: 1
   iterations: 10
   colliderBufferSize: 1
   ropeWidth: 0.1
+  currentNodePositions: []
   showPlayerCollisionRadius: 1
   playerCollisionColor: {r: 1, g: 0, b: 0, a: 1}
   playerCollisionRadius: 0.65

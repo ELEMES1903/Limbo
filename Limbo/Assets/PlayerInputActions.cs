@@ -299,12 +299,39 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": true
                 },
                 {
-                    ""name"": ""RopeDrop"",
+                    ""name"": ""Drop"",
                     ""type"": ""Button"",
                     ""id"": ""22a3e63e-cc20-471b-88e0-ca1d9b8dc302"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": ""Hold(duration=0.6)"",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Sway"",
+                    ""type"": ""Value"",
+                    ""id"": ""2bd540c9-2f07-4202-b50d-4b6267cbd1f5"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Rotate"",
+                    ""type"": ""Button"",
+                    ""id"": ""ac8f270e-a52c-4895-a7b9-ebe670407c9c"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Jump"",
+                    ""type"": ""Button"",
+                    ""id"": ""37f7921c-3a99-4ed1-a6c4-9269875081e9"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
                     ""initialStateCheck"": false
                 }
             ],
@@ -323,7 +350,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": ""Positive"",
                     ""id"": ""f93e6e19-4179-40ee-bcf0-216cdb2bc35f"",
-                    ""path"": ""<Keyboard>/s"",
+                    ""path"": ""<Keyboard>/q"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -334,7 +361,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": ""Negative"",
                     ""id"": ""5eea04e5-d264-494b-be9b-20361740b98c"",
-                    ""path"": ""<Keyboard>/w"",
+                    ""path"": ""<Keyboard>/e"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -345,11 +372,110 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""bd4f8804-b4b1-4b44-897c-96b8fd85ab05"",
-                    ""path"": ""<Keyboard>/e"",
+                    ""path"": ""<Keyboard>/r"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""RopeDrop"",
+                    ""action"": ""Drop"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""2D Vector"",
+                    ""id"": ""57c38e66-6e50-48e9-ab50-a5a8ad86ceab"",
+                    ""path"": ""2DVector"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Sway"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""e518aff6-7eec-453e-a3e3-462579e6723b"",
+                    ""path"": ""<Keyboard>/w"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Sway"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""db575bb7-4e69-4bd4-874b-03807999de81"",
+                    ""path"": ""<Keyboard>/s"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Sway"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""d4841a0a-4a70-40e2-8abf-53df3fc707aa"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Sway"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""64ee165f-f6b3-491c-b6fd-7a458d92ae2a"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Sway"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""19c478af-d2a7-45f9-b490-f2732410c44f"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rotate"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""9b2d4c74-735d-44c3-91b6-20ccf360106e"",
+                    ""path"": ""<Keyboard>/z"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rotate"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""4c7ab98c-71ad-481b-bf59-629e872747e5"",
+                    ""path"": ""<Keyboard>/x"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rotate"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2391bd03-3e13-448d-b34a-02c835cc1d73"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Jump"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -373,7 +499,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         // RopeHang
         m_RopeHang = asset.FindActionMap("RopeHang", throwIfNotFound: true);
         m_RopeHang_Climb = m_RopeHang.FindAction("Climb", throwIfNotFound: true);
-        m_RopeHang_RopeDrop = m_RopeHang.FindAction("RopeDrop", throwIfNotFound: true);
+        m_RopeHang_Drop = m_RopeHang.FindAction("Drop", throwIfNotFound: true);
+        m_RopeHang_Sway = m_RopeHang.FindAction("Sway", throwIfNotFound: true);
+        m_RopeHang_Rotate = m_RopeHang.FindAction("Rotate", throwIfNotFound: true);
+        m_RopeHang_Jump = m_RopeHang.FindAction("Jump", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -779,7 +908,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputActionMap m_RopeHang;
     private List<IRopeHangActions> m_RopeHangActionsCallbackInterfaces = new List<IRopeHangActions>();
     private readonly InputAction m_RopeHang_Climb;
-    private readonly InputAction m_RopeHang_RopeDrop;
+    private readonly InputAction m_RopeHang_Drop;
+    private readonly InputAction m_RopeHang_Sway;
+    private readonly InputAction m_RopeHang_Rotate;
+    private readonly InputAction m_RopeHang_Jump;
     /// <summary>
     /// Provides access to input actions defined in input action map "RopeHang".
     /// </summary>
@@ -796,9 +928,21 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Climb => m_Wrapper.m_RopeHang_Climb;
         /// <summary>
-        /// Provides access to the underlying input action "RopeHang/RopeDrop".
+        /// Provides access to the underlying input action "RopeHang/Drop".
         /// </summary>
-        public InputAction @RopeDrop => m_Wrapper.m_RopeHang_RopeDrop;
+        public InputAction @Drop => m_Wrapper.m_RopeHang_Drop;
+        /// <summary>
+        /// Provides access to the underlying input action "RopeHang/Sway".
+        /// </summary>
+        public InputAction @Sway => m_Wrapper.m_RopeHang_Sway;
+        /// <summary>
+        /// Provides access to the underlying input action "RopeHang/Rotate".
+        /// </summary>
+        public InputAction @Rotate => m_Wrapper.m_RopeHang_Rotate;
+        /// <summary>
+        /// Provides access to the underlying input action "RopeHang/Jump".
+        /// </summary>
+        public InputAction @Jump => m_Wrapper.m_RopeHang_Jump;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -828,9 +972,18 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Climb.started += instance.OnClimb;
             @Climb.performed += instance.OnClimb;
             @Climb.canceled += instance.OnClimb;
-            @RopeDrop.started += instance.OnRopeDrop;
-            @RopeDrop.performed += instance.OnRopeDrop;
-            @RopeDrop.canceled += instance.OnRopeDrop;
+            @Drop.started += instance.OnDrop;
+            @Drop.performed += instance.OnDrop;
+            @Drop.canceled += instance.OnDrop;
+            @Sway.started += instance.OnSway;
+            @Sway.performed += instance.OnSway;
+            @Sway.canceled += instance.OnSway;
+            @Rotate.started += instance.OnRotate;
+            @Rotate.performed += instance.OnRotate;
+            @Rotate.canceled += instance.OnRotate;
+            @Jump.started += instance.OnJump;
+            @Jump.performed += instance.OnJump;
+            @Jump.canceled += instance.OnJump;
         }
 
         /// <summary>
@@ -845,9 +998,18 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Climb.started -= instance.OnClimb;
             @Climb.performed -= instance.OnClimb;
             @Climb.canceled -= instance.OnClimb;
-            @RopeDrop.started -= instance.OnRopeDrop;
-            @RopeDrop.performed -= instance.OnRopeDrop;
-            @RopeDrop.canceled -= instance.OnRopeDrop;
+            @Drop.started -= instance.OnDrop;
+            @Drop.performed -= instance.OnDrop;
+            @Drop.canceled -= instance.OnDrop;
+            @Sway.started -= instance.OnSway;
+            @Sway.performed -= instance.OnSway;
+            @Sway.canceled -= instance.OnSway;
+            @Rotate.started -= instance.OnRotate;
+            @Rotate.performed -= instance.OnRotate;
+            @Rotate.canceled -= instance.OnRotate;
+            @Jump.started -= instance.OnJump;
+            @Jump.performed -= instance.OnJump;
+            @Jump.canceled -= instance.OnJump;
         }
 
         /// <summary>
@@ -962,11 +1124,32 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnClimb(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "RopeDrop" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "Drop" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnRopeDrop(InputAction.CallbackContext context);
+        void OnDrop(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Sway" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSway(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Rotate" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRotate(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Jump" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnJump(InputAction.CallbackContext context);
     }
 }

@@ -45,10 +45,12 @@ public class PlayerStateManager : MonoBehaviour
     public Transform ledgeRaycastOrigin;
 
     [Header("Rope")]
+    public float ropeJumpForce = 1f;
     public SplineFollower splineFollower;
     public SplineComputer splineComputer;
     [HideInInspector] public Vector3 ropeContactPoint;
     public bool ropeDetected;
+
 
     [HideInInspector] public GarysVerletRope rope;
 
@@ -183,7 +185,7 @@ public class PlayerStateManager : MonoBehaviour
 
         pitch = Mathf.Clamp(pitch, -80f, 80f);
 
-        if (currentState is LedgeHangState)
+        if (currentState is LedgeHangState || currentState is RopeHangState)
         {
             // Get the current yaw of the player
             float currentPlayerYaw = transform.eulerAngles.y;
@@ -211,6 +213,18 @@ public class PlayerStateManager : MonoBehaviour
             Quaternion targetRotation = Quaternion.Euler(0f, cameraHolder.eulerAngles.y, 0f);
             rb.MoveRotation(targetRotation);
         }
+    }
+
+    public void CalibrateCamera()
+    {
+        // Get the yaw (horizontal angle) of the player and camera
+        float playerYaw = transform.eulerAngles.y;
+        float cameraYaw = cameraHolder.eulerAngles.y;
+
+        // Calculate the shortest signed angle between the player and camera yaw
+        // This handles wraparound (e.g., 359° vs 1° becomes +2°, not -358°)
+        // This value is stored to define the "initial" camera offset when entering ledgehang
+        initialYaw = Mathf.DeltaAngle(playerYaw, cameraYaw);
     }
 
     public void HandleMovementInput()
